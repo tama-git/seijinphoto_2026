@@ -1,0 +1,309 @@
+/* ========================================
+   参加者ホーム画面（home.html）専用
+   ※ 現在のHTMLで使っているクラスに合わせた整理版
+======================================== */
+
+
+/* ========================================
+   ページ全体
+======================================== */
+.user-page {
+  min-height: 100vh;
+  background: #f3f3f3;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+
+
+/* ========================================
+   固定ヘッダー
+======================================== */
+.user-header-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+
+  /* 背景を分離してヘッダー感を出す */
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+
+  border-bottom: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+
+  z-index: 1000;
+  transform: translateY(0);
+  transition: transform 0.2s ease;
+  padding: 10px 12px;
+}
+
+/* 下スクロール中に隠す用（user.js が付与） */
+.user-header-bar.user-header-bar--hidden {
+  transform: translateY(-110%);
+}
+
+.user-header-inner {
+  max-width: 960px;
+  margin: 0 auto;
+
+  /* ヘッダー本体の高さ調整 */
+  padding: 26px 18px 22px;
+
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.user-title {
+  margin: 0;
+  font-size: clamp(30px, 8.7vw, 47px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.user-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+}
+
+.user-header-name {
+  padding: 0.5rem;
+  font-size: clamp(24px, 7.2vw, 32px);
+  color: #444;
+  white-space: nowrap;
+}
+
+.user-header-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.user-header-link {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #1d4ed8;
+  font-size: clamp(24px, 7.2vw, 31px);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.user-header-link:hover {
+  text-decoration: none;
+  filter: brightness(0.98);
+}
+
+
+/* ========================================
+   メインコンテンツ
+======================================== */
+/* 固定ヘッダー分の余白を確保 */
+.user-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 140px 16px 28px;
+  box-sizing: border-box;
+}
+
+
+/* ========================================
+   投稿カード一覧
+======================================== */
+.user-photo-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  /* 1列フィード表示 */
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.user-photo-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 写真の外枠 */
+.user-photo-card .photo-image-wrapper {
+  width: 100%;
+  overflow: hidden;
+  background: #f2f2f2;
+}
+
+/* 写真は比率を保って表示 */
+.user-photo-card .photo-image-wrapper img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+
+/* ========================================
+   投稿メタ情報（名前・いいね）
+======================================== */
+.user-photo-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 6px;
+}
+
+.user-photo-name {
+  font-size: 4rem;
+  font-weight: 700;
+  color: #222;
+}
+
+
+/* ========================================
+   コメント
+======================================== */
+.user-photo-comment {
+  margin: 0;
+  padding: 0 10px 10px;
+  font-size: 3.5rem;
+  color: #555;
+  word-break: break-word;
+}
+
+
+/* ========================================
+   投稿なし表示
+======================================== */
+.user-photo-empty {
+  margin-top: 24px;
+  text-align: center;
+  color: #777;
+}
+
+
+/* ========================================
+   いいね表示
+======================================== */
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  font-size: 3.5rem;
+  color: #666666; /* 未いいね時 */
+}
+
+/* ボタン全体の色は維持し、ハートSVG側で状態変化を表現 */
+.like-btn.liked {
+  color: #666666;
+}
+
+.like-heart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.3rem;
+}
+
+.like-heart-svg {
+  width: 3.25rem;
+  height: 3.25rem;
+  display: block;
+  stroke: #666666;
+  stroke-width: 1.6;
+  fill: transparent;
+}
+
+.like-btn.liked .like-heart-svg {
+  stroke: #ff0400;
+  fill: #ff0400;
+}
+
+.like-count {
+  font-size: 3.5rem;
+  font-weight: 700;
+}
+
+
+/* ========================================
+   モーダル表示
+======================================== */
+.photo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.photo-modal-overlay.is-active {
+  display: flex;
+}
+
+/* HTMLに合わせて .photo-modal-content を使用 */
+.photo-modal-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  max-width: 92vw;
+  max-height: 92vh;
+  padding: 8px;
+  box-sizing: border-box;
+
+  background: #000000;
+}
+
+.photo-modal-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.photo-modal-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+
+/* ========================================
+   スマホ微調整
+======================================== */
+@media (max-width: 480px) {
+  .user-header-bar {
+    padding: 8px 10px;
+  }
+
+  .user-header-link {
+    padding: 6px 8px;
+  }
+}

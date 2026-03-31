@@ -1,0 +1,72 @@
+{% extends "photos/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'photos/css/screen.css' %}?v=20251224-3">
+{% endblock %}
+
+{% block content %}
+<div class="screen-body">
+
+  {# 上部タイトル #}
+  <header class="screen-header">
+    <h1>2kumi Seijin Party</h1>
+  </header>
+
+  {# メイン表示領域（JSが制御） #}
+  <main class="screen-main" data-api-url="{% url 'photos:screen_photos_api' %}">
+
+    {# 写真グリッド（5列レーン） #}
+    <section class="screen-photo-grid">
+      <div class="screen-column"></div>
+      <div class="screen-column"></div>
+      <div class="screen-column"></div>
+      <div class="screen-column"></div>
+      <div class="screen-column"></div>
+    </section>
+
+    {# 写真がないときの表示 #}
+    <p class="screen-no-photo{% if photos %} is-hidden{% endif %}" id="screenNoPhoto">
+      まだ写真がありません
+    </p>
+
+    {# 初期データ（JSが読み取る） #}
+    <div id="initialData" class="screen-initial-data" aria-hidden="true">
+      {% for photo in photos %}
+        <article class="screen-photo-card-data"
+          data-id="{{ photo.id }}"
+          data-image="{{ photo.image.url }}"
+          data-name="{{ photo.name }}"
+          data-likes="{{ photo.likes.count }}"
+          data-comment="{{ photo.comment|default:'' }}">
+        </article>
+      {% endfor %}
+    </div>
+  </main>
+
+  {# ピックアップ表示（拡大演出） #}
+  <div id="pickupOverlay" class="pickup-overlay" aria-hidden="true">
+    <article class="screen-photo-card pickup-card no-message" id="pickupCard">
+      <div class="pickup-image-wrap">
+        <img id="pickupImage" class="screen-photo-image" src="" alt="">
+      </div>
+
+      <div class="screen-photo-meta">
+        <span class="screen-name" id="pickupName"></span>
+
+        <div class="screen-like-display">
+          <span class="screen-heart" id="pickupHeart">♡</span>
+          <span class="screen-like-count" id="pickupLikeCount">0</span>
+        </div>
+      </div>
+
+      <p class="screen-message is-hidden" id="pickupMessage"></p>
+    </article>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'photos/js/screen.js' %}?v={% now 'U' %}" defer></script>
+{% endblock %}

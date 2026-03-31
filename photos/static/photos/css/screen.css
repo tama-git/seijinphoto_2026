@@ -1,0 +1,338 @@
+/* ========================================
+   スクリーン画面全体
+======================================== */
+.screen-body {
+  margin: 0;
+  position: relative;
+  background: #f2f2f2;
+  color: #222;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* スクロールバー非表示 */
+html,
+body{
+  margin: 0;
+  padding: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* ========================================
+   タイトル表示
+======================================== */
+/* 上部に浮かせるプレート型タイトル */
+.screen-header {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+
+  background: transparent;
+  border: none;
+  padding: 0;
+  pointer-events: none;
+}
+
+screen-header {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+  background: transparent;
+  padding: 0;
+  pointer-events: none;
+}
+
+.screen-header h1 {
+  display: inline-block;
+  margin: 0;
+  padding: 8px 20px;
+
+  background: #ffffff;
+  border: none;
+  border-radius: 7px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.10);
+
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #222;
+}
+
+
+/* ========================================
+   メイン表示領域
+======================================== */
+.screen-main {
+  height: 100vh;
+  padding: 48px 16px 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.screen-main::-webkit-scrollbar {
+  display: none;
+}
+
+/* ========================================
+   グリッドレイアウト
+======================================== */
+/* ピンタレスト風の縦積み表示 */
+.screen-photo-grid {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.screen-column {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-initial-data {
+  display: none;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+
+/* ========================================
+   写真カード
+======================================== */
+.screen-photo-card {
+  width: 100%;
+  padding: 0 0 4px;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  break-inside: avoid;
+}
+
+/* コメントが無い場合は下余白を抑える */
+.screen-photo-card.no-message {
+  padding-bottom: 4px;
+}
+
+/* 追加直後の表示アニメーション */
+.screen-photo-card.is-new {
+  opacity: 0;
+  transform: translateY(16px) scale(0.97);
+  animation: screenCardIn 0.4s ease-out forwards;
+}
+
+@keyframes screenCardIn {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* グリッド調整用の空カード */
+.screen-photo-card--empty {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.screen-photo-card--empty img,
+.screen-photo-card--empty .screen-photo-meta,
+.screen-photo-card--empty .screen-message {
+  display: none;
+}
+
+
+/* ========================================
+   写真本体
+======================================== */
+.screen-photo-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  border-radius: 5px 5px 0 0;
+}
+
+
+/* ========================================
+   メタ情報（名前・いいね）
+======================================== */
+.screen-photo-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-top: 0;
+  padding: 0 8px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.screen-name {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  line-height: 1;
+}
+
+
+/* ========================================
+   コメント表示
+======================================== */
+.screen-message {
+  margin: 3px 0 0;
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+
+/* ========================================
+   いいね表示
+======================================== */
+.screen-like-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.screen-like-display .screen-heart {
+  position: relative;
+  top: -4px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.screen-heart--liked {
+  color: #ff0400;
+}
+
+.screen-heart--no-like {
+  color: #000000;
+}
+
+.screen-like-count {
+  position: relative;
+  top: -4px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+
+/* ========================================
+   ピックアップ表示
+======================================== */
+:root {
+  --pickup-h: 78vh;
+}
+
+.pickup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: grid;
+  place-items: center;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.pickup-overlay.is-show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 写真に合わせてカード幅を可変にする */
+.pickup-card {
+  display: inline-flex;
+  flex-direction: column;
+
+  width: fit-content;
+  max-width: 96vw;
+
+  padding: 0 0 0px;
+  overflow: hidden;
+
+  background: #ffffff;
+  border: none;
+  border-radius: 5px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+
+  transform: translateY(10px) scale(0.98);
+  transition: transform 0.25s ease;
+}
+
+.pickup-overlay.is-show .pickup-card {
+  transform: translateY(0) scale(1);
+}
+
+.pickup-image-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.pickup-image-wrap img {
+  width: auto;
+  max-width: 96vw;
+  height: var(--pickup-h);
+  object-fit: contain;
+  display: block;
+}
+
+
+/* ========================================
+   ピックアップ内の文字サイズ調整
+======================================== */
+.pickup-card .screen-name {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.pickup-card .screen-message {
+  padding: 8px 12px 10px;
+  font-size: 21px;
+  line-height: 1.25;
+}
+
+.pickup-card .screen-like-count {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.pickup-card .screen-heart {
+  font-size: 27px;
+  line-height: 1;
+}
+
+.pickup-card .screen-photo-meta {
+  padding: 10px 12px;
+}

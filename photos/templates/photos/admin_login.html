@@ -1,0 +1,26 @@
+{% extends "photos/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'photos/css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-head">
+      <h2 class="auth-title">管理者ログイン</h2>
+      <p class="auth-sub">管理者用パスワードを入力してください。</p>
+    </div>
+
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+
+      {# 管理者用ログインフォーム #}
+      {{ form.as_p }}
+
+      <button type="submit" class="auth-btn">ログイン</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

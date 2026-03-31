@@ -1,0 +1,41 @@
+{% extends "photos/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'photos/css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-head">
+      <p class="auth-sub">名前を入力して参加！</p>
+    </div>
+
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+
+      {# フォーム全体のエラー表示 #}
+      {% if form.non_field_errors %}
+        <div class="auth-errors">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="auth-field">
+        <label for="{{ form.name.id_for_label }}" class="auth-label">名前</label>
+        {{ form.name }}
+
+        {# 名前入力欄のエラー表示 #}
+        {% if form.name.errors %}
+          <div class="auth-errors">
+            {{ form.name.errors }}
+          </div>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="auth-btn">参加</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

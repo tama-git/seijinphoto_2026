@@ -1,0 +1,74 @@
+{% extends "photos/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'photos/css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<header class="user-header-bar">
+    <div class="user-header-inner">
+        <div class="user-header">
+            <h1 class="user-title">管理者ページ</h1>
+            <nav class="user-nav">
+                <a href="{% url 'photos:screen' %}">スクリーン表示</a>
+                <a href="{% url 'photos:admin_logout' %}">ログアウト</a>
+            </nav>
+        </div>
+        <p class="user-login-name">管理者としてログイン中</p>
+    </div>
+</header>
+
+<main class="user-page">
+    <section class="feed-section">
+        <h2 class="section-title">投稿された写真</h2>
+
+        {% if photos %}
+            <ul class="photo-list">
+                {% for photo in photos %}
+                    <li class="photo-item">
+                        <div class="photo-image-wrapper">
+                            <img src="{{ photo.image.url }}" alt="photo by {{ photo.name }}" class="photo-image">
+                        </div>
+
+                        <div class="photo-meta">
+                            <div class="photo-header-row">
+                                <span class="photo-name">{{ photo.name }}</span>
+                                <span class="photo-time">
+                                    {{ photo.created_at|date:"m/d H:i" }}
+                                </span>
+                            </div>
+
+                            {% if photo.comment %}
+                                <p class="photo-comment">{{ photo.comment }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="photo-actions">
+                            {# 単体ダウンロード #}
+                            <a href="{{ photo.image.url }}" download class="download-btn">
+                                ダウンロード
+                            </a>
+
+                            {# 削除ボタン #}
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="delete_photo_id" value="{{ photo.id }}">
+                                <button type="submit"
+                                        class="admin-delete-btn"
+                                        onclick="return confirm('本当に削除しますか？');">
+                                    削除
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="photo-empty">まだ写真はありません。</p>
+        {% endif %}
+    </section>
+</main>
+
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "photos/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'photos/css/upload.css' %}?v=20251225_4">
+{% endblock %}
+
+{% block content %}
+<div class="upload-wrap">
+  <div class="upload-shell">
+
+    <!-- 投稿フォームカード -->
+    <div class="upload-card">
+      <div class="upload-head">
+        <h1 class="upload-title">写真投稿</h1>
+        <h2 class="upload-subtitle">写真を選んでスクリーンに映そう！</h2>
+
+        <div class="upload-actions">
+          <a class="upload-back-pill" href="{% url 'photos:home' %}">
+            ← みんなの投稿へ
+          </a>
+        </div>
+      </div>
+
+      <form id="upload-form" method="post" enctype="multipart/form-data" class="upload-form">
+        {% csrf_token %}
+
+        {# フォーム全体のエラー表示 #}
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for err in form.non_field_errors %}
+              <p class="form-error">{{ err }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {# フォーム項目を順番に描画 #}
+        {% for field in form %}
+          <div class="form-row">
+            <label class="form-label" for="{{ field.id_for_label }}">
+              {{ field.label }}
+            </label>
+
+            {% if field.field.widget.input_type == "file" %}
+              <div class="file-ui" id="fileUi-{{ field.id_for_label }}">
+                {{ field }}
+                <label for="{{ field.id_for_label }}" class="file-btn">写真を選択</label>
+                <span class="file-name" id="fileName-{{ field.id_for_label }}">選択されていません</span>
+
+                {% if field.help_text %}
+                  <small class="form-help">{{ field.help_text }}</small>
+                {% endif %}
+
+                {% if field.errors %}
+                  <div class="field-errors">
+                    {% for err in field.errors %}
+                      <p class="field-error">{{ err }}</p>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="form-field">
+                {{ field }}
+
+                {% if field.help_text %}
+                  <small class="form-help">{{ field.help_text }}</small>
+                {% endif %}
+
+                {% if field.errors %}
+                  <div class="field-errors">{{ field.errors }}</div>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        <div class="form-actions">
+          <button id="submit-btn" type="submit" class="submit-button">投稿する</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'photos/js/upload.js' %}?v=20260109_1"></script>
+<script src="{% static 'photos/js/submit_lock.js' %}?v=20260109_1"></script>
+{% endblock %}

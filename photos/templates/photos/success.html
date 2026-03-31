@@ -1,0 +1,40 @@
+{% extends "photos/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'photos/css/upload.css' %}">
+<link rel="stylesheet" href="{% static 'photos/css/success.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="upload-wrap success-full">
+  <div class="upload-shell">
+    <div class="success-card">
+      <div class="success-head">
+        <div class="success-icon" aria-hidden="true">✔</div>
+
+        <h1 class="success-title">投稿が完了しました</h1>
+
+        {% if user_name %}
+          <p class="success-text">
+            {{ user_name }} さん、投稿ありがとう！<br>
+            スクリーンに映るまで少々お待ちください
+          </p>
+        {% else %}
+          <p class="success-text">投稿ありがとうございます。</p>
+        {% endif %}
+      </div>
+
+      <div class="success-actions">
+        <a href="{% url 'photos:home' %}" class="submit-button success-primary">
+          みんなの投稿を見る
+        </a>
+
+        <a href="{% url 'photos:upload' %}" class="upload-back-pill success-secondary">
+          つづけて投稿する
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

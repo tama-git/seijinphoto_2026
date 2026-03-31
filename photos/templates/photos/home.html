@@ -1,0 +1,91 @@
+{% extends "photos/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'photos/css/user.css' %}?v=20251222">
+{% endblock %}
+
+{% block content %}
+<div class="user-page">
+
+    {# 上部固定ヘッダー #}
+    <header class="user-header-bar">
+        <div class="user-header-inner">
+            <h1 class="user-title">みんなの投稿</h1>
+
+            <div class="user-header-right">
+                <span class="user-header-name">
+                    ようこそ！{{ user_name }} さん
+                </span>
+
+                <nav class="user-header-nav">
+                    <a href="{% url 'photos:upload' %}" class="user-header-link">
+                        写真を投稿する
+                    </a>
+                    <a href="{% url 'photos:logout' %}" class="user-header-link">
+                        ログアウト
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    {# 投稿一覧 #}
+    <main class="user-main">
+        <section class="user-photo-list">
+            {% if photos %}
+                <ul class="user-photo-cards">
+                    {% for photo in photos %}
+                        <li class="user-photo-card">
+                            <div class="photo-image-wrapper">
+                                <img src="{{ photo.image.url }}" alt="photo by {{ photo.name }}">
+                            </div>
+
+                            <div class="user-photo-meta">
+                                <div class="user-photo-name">{{ photo.name }}</div>
+
+                                {# いいねボタン（user.js が制御） #}
+                                <button
+                                    type="button"
+                                    class="like-btn{% if photo.id in liked_photo_ids %} liked{% endif %}"
+                                    data-photo-id="{{ photo.id }}"
+                                >
+                                    <span class="like-heart" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" class="like-heart-svg">
+                                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5C2 6 4 4 6.5 4C8.24 4 9.91 4.81 11 6.08C12.09 4.81 13.76 4 15.5 4C18 4 20 6 20 8.5C20 12.28 16.6 15.36 13.45 19.03L12 21.35z" />
+                                        </svg>
+                                    </span>
+                                    <span class="like-count">{{ photo.likes.count }}</span>
+                                </button>
+                            </div>
+
+                            {% if photo.comment %}
+                                <p class="user-photo-comment">
+                                    {{ photo.comment }}
+                                </p>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="user-photo-empty">
+                    まだ写真がありません
+                </p>
+            {% endif %}
+        </section>
+    </main>
+
+    {# 写真拡大表示用モーダル #}
+    <div id="photo-modal" class="photo-modal-overlay">
+        <div class="photo-modal-content">
+            <button type="button" class="photo-modal-close">×</button>
+            <img src="" alt="" class="photo-modal-image">
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'photos/js/user.js' %}"></script>
+{% endblock %}

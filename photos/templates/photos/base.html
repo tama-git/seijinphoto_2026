@@ -1,0 +1,23 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seijin 2026</title>
+
+    <!-- 全ページ共通CSS -->
+    <link rel="stylesheet" href="{% static 'photos/css/base.css' %}">
+
+    <!-- 各ページ専用CSS -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 各ページ本文 -->
+    {% block content %}{% endblock %}
+
+    <!-- 各ページ専用JS -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

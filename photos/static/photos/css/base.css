@@ -1,0 +1,12 @@
+/* いいね表示（スクリーン用） */
+.screen-like-display {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.4rem;   /* スクリーンなので少し大きめでもOK */
+}
+
+.screen-like-count {
+    font-weight: bold;
+}
