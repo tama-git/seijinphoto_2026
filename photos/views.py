@@ -10,9 +10,8 @@ from functools import wraps
 
 # ========================================
 # QRコード認証（本番用）
-# ※ 現在はローカル確認のため簡易実装に切り替え
 # ========================================
-'''
+
 def require_qr_ok(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
@@ -21,7 +20,6 @@ def require_qr_ok(view_func):
         return view_func(request, *args, **kwargs)
     return _wrapped
 
-from django.http import HttpResponseForbidden
 
 def gate_view(request):
     key = request.GET.get("key", "")
@@ -32,11 +30,12 @@ def gate_view(request):
 
     return HttpResponseForbidden("QRからアクセスしてください。")
 
-'''
 
 # ========================================
 # ローカル確認用の簡易認証
+# ※ 現在は本番に切り替え
 # ========================================
+'''
 def require_qr_ok(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
@@ -46,14 +45,14 @@ def require_qr_ok(view_func):
 # ローカル確認用：gate に来てもそのままログインへ
 def gate_view(request):
     return redirect("photos:login")
+'''
+
 
 def get_session_key(request):
     """セッションIDを必ず持たせるヘルパー"""
     if not request.session.session_key:
         request.session.create()
     return request.session.session_key
-
-
 
 @require_qr_ok
 def login_view(request):
