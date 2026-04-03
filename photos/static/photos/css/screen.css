@@ -11,23 +11,21 @@
 
 /* スクロールバー非表示 */
 html,
-body{
+body {
   margin: 0;
   padding: 0;
   scrollbar-width: none;
   -ms-overflow-style: none;
-
 }
+
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none;
 }
 
-
 /* ========================================
    タイトル表示
 ======================================== */
-/* 上部に浮かせるプレート型タイトル */
 .screen-header {
   position: absolute;
   top: 0;
@@ -38,18 +36,6 @@ body::-webkit-scrollbar {
 
   background: transparent;
   border: none;
-  padding: 0;
-  pointer-events: none;
-}
-
-screen-header {
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  z-index: 10;
-  background: transparent;
   padding: 0;
   pointer-events: none;
 }
@@ -71,7 +57,6 @@ screen-header {
   color: #222;
 }
 
-
 /* ========================================
    メイン表示領域
 ======================================== */
@@ -79,30 +64,50 @@ screen-header {
   height: 100vh;
   padding: 48px 16px 24px;
   box-sizing: border-box;
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-
-.screen-main::-webkit-scrollbar {
-  display: none;
+  overflow: hidden;
 }
 
 /* ========================================
    グリッドレイアウト
 ======================================== */
-/* ピンタレスト風の縦積み表示 */
 .screen-photo-grid {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 10px;
   width: 100%;
+  height: calc(100vh - 72px);
 }
 
 .screen-column {
   flex: 1 1 0;
   min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.screen-column-track {
   display: flex;
   flex-direction: column;
+  will-change: transform;
+  animation-name: screenColumnLoop;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: var(--loop-duration, 40s);
+}
+
+.screen-column-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@keyframes screenColumnLoop {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-1 * var(--loop-distance, 0px)));
+  }
 }
 
 .screen-initial-data {
@@ -113,7 +118,6 @@ screen-header {
   display: none !important;
 }
 
-
 /* ========================================
    写真カード
 ======================================== */
@@ -121,7 +125,7 @@ screen-header {
   width: 100%;
   padding: 0 0 4px;
   box-sizing: border-box;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 
   background: #ffffff;
   border: 1px solid #e0e0e0;
@@ -148,20 +152,6 @@ screen-header {
   }
 }
 
-/* グリッド調整用の空カード */
-.screen-photo-card--empty {
-  border: none;
-  background: transparent;
-  box-shadow: none;
-}
-
-.screen-photo-card--empty img,
-.screen-photo-card--empty .screen-photo-meta,
-.screen-photo-card--empty .screen-message {
-  display: none;
-}
-
-
 /* ========================================
    写真本体
 ======================================== */
@@ -175,7 +165,6 @@ screen-header {
   min-height: 200px;
   background: #222;
 }
-
 
 /* ========================================
    メタ情報（名前・いいね）
@@ -198,7 +187,6 @@ screen-header {
   line-height: 1;
 }
 
-
 /* ========================================
    コメント表示
 ======================================== */
@@ -209,7 +197,6 @@ screen-header {
   line-height: 1.4;
   word-break: break-word;
 }
-
 
 /* ========================================
    いいね表示
@@ -244,7 +231,6 @@ screen-header {
   line-height: 1;
 }
 
-
 /* ========================================
    ピックアップ表示
 ======================================== */
@@ -270,7 +256,6 @@ screen-header {
   pointer-events: auto;
 }
 
-/* 写真に合わせてカード幅を可変にする */
 .pickup-card {
   display: inline-flex;
   flex-direction: column;
@@ -278,7 +263,7 @@ screen-header {
   width: fit-content;
   max-width: 96vw;
 
-  padding: 0 0 0px;
+  padding: 0;
   overflow: hidden;
 
   background: #ffffff;
@@ -308,7 +293,6 @@ screen-header {
   object-fit: contain;
   display: block;
 }
-
 
 /* ========================================
    ピックアップ内の文字サイズ調整
