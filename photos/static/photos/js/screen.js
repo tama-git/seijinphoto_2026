@@ -16,10 +16,8 @@ window.addEventListener("load", () => {
   const pickupLikeCount = document.getElementById("pickupLikeCount");
   const pickupMessage = document.getElementById("pickupMessage");
 
-  // 必須要素が存在しない場合は処理しない
   if (!container || !grid) return;
 
-  // APIエンドポイント
   const apiUrl = container.dataset.apiUrl || "";
 
   // ========================================
@@ -27,18 +25,18 @@ window.addEventListener("load", () => {
   // ========================================
   const POLL_MS = 2000;
   const LIKE_REFRESH_MS = 10000;
-  const PICKUP_FIRST_DELAY_MS = 5 * 1000;
-  const PICKUP_EVERY_MS = 60 * 1000;
-  const PICKUP_SHOW_MS = 8 * 1000;
+  const PICKUP_FIRST_DELAY_MS = 5000;
+  const PICKUP_EVERY_MS = 60000;
+  const PICKUP_SHOW_MS = 8000;
 
-  const MIN_HEIGHT_MULTIPLIER = 2.2;
   const SPEED = 0.6;
+  const COLUMN_COUNT = 5;
 
-  // 負荷対策
-  const MAX_CARDS_PER_COLUMN = 35;
-  const REMOVE_MARGIN = 500;
-  const APPEND_BATCH_SIZE = 8;
-  const THRESHOLD_MULTIPLIER = 2;
+  // 各列で最低限保持したい枚数
+  const MIN_CARDS_PER_COLUMN = 6;
+
+  // 上端からどれだけ見えなくなったら削除するか
+  const REMOVE_MARGIN = 250;
 
   // ========================================
   // 状態管理
@@ -53,18 +51,16 @@ window.addEventListener("load", () => {
   let pickupVisible = false;
   let lastPickupId = null;
 
-  let started = false;
-  let lastTs = null;
   let lastId = 0;
-
   let pollRunning = false;
   let likeRefreshRunning = false;
 
+  let started = false;
+  let lastTs = null;
+
+  // デッキ用
   let shuffledDeck = [];
   let deckCursor = 0;
-
-  // 順番投入用
-  let nextColumnIndex = 0;
 
   // ========================================
   // 0件表示切り替え
@@ -83,11 +79,9 @@ window.addEventListener("load", () => {
   // ========================================
   function normalizeImageUrl(p) {
     let imgUrl = p.image_url || p.image || "";
-
     if (imgUrl && !imgUrl.startsWith("/") && !imgUrl.startsWith("http")) {
       imgUrl = "/media/" + imgUrl;
     }
-
     return imgUrl;
   }
 
@@ -152,9 +146,10 @@ window.addEventListener("load", () => {
   if (columns.length === 0) {
     grid.innerHTML = "";
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < COLUMN_COUNT; i++) {
       const col = document.createElement("div");
       col.className = "screen-column";
+      col.dataset.columnIndex = String(i);
       grid.appendChild(col);
     }
 
@@ -189,30 +184,7 @@ window.addEventListener("load", () => {
   hideNoPhoto();
 
   // ========================================
-  // 順番に列を選ぶ
-  // ========================================
-  function pickNextColumn() {
-    const target = columns[nextColumnIndex];
-    nextColumnIndex = (nextColumnIndex + 1) % columns.length;
-    return target;
-  }
-
-  // ========================================
-  // 写真追加
-  // ========================================
-  function appendPhotoToColumn(photoData, isNew = false) {
-    const card = createCardElement(photoData);
-
-    if (isNew) {
-      card.classList.add("is-new");
-    }
-
-    pickNextColumn().appendChild(card);
-    hideNoPhoto();
-  }
-
-  // ========================================
-  // シャッフル
+  // デッキ生成
   // ========================================
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -221,77 +193,90 @@ window.addEventListener("load", () => {
     }
   }
 
-  // ========================================
-  // 表示用デッキ
-  // ========================================
   function rebuildDeck() {
     shuffledDeck = [...basePhotoData];
     shuffle(shuffledDeck);
     deckCursor = 0;
   }
 
-  function getNextDeckItems(count) {
-    if (basePhotoData.length === 0) return [];
+  function getNextDeckItem() {
+    if (basePhotoData.length === 0) return null;
 
     if (shuffledDeck.length === 0 || deckCursor >= shuffledDeck.length) {
       rebuildDeck();
     }
 
-    const items = [];
+    const item = shuffledDeck[deckCursor];
+    deckCursor += 1;
+    return item;
+  }
 
-    for (let i = 0; i < count; i++) {
-      if (deckCursor >= shuffledDeck.length) {
-        rebuildDeck();
+  // ========================================
+  // 指定列に追加
+  // ========================================
+  function appendPhotoToColumn(column, photoData, isNew = false) {
+    if (!column || !photoData) return;
+
+    const card = createCardElement(photoData);
+    if (isNew) {
+      card.classList.add("is-new");
+    }
+
+    column.appendChild(card);
+    hideNoPhoto();
+  }
+
+  // ========================================
+  // 初期埋め
+  // 各列に順番に必要枚数だけ入れる
+  // ========================================
+  function fillInitialColumns() {
+    if (basePhotoData.length === 0) return;
+
+    rebuildDeck();
+
+    for (const col of columns) {
+      while (col.children.length < MIN_CARDS_PER_COLUMN) {
+        const p = getNextDeckItem();
+        if (!p) break;
+        appendPhotoToColumn(col, p, false);
       }
-      items.push(shuffledDeck[deckCursor]);
-      deckCursor += 1;
-    }
-
-    return items;
-  }
-
-  function appendDeckBatch(count = APPEND_BATCH_SIZE) {
-    const items = getNextDeckItems(count);
-    for (const p of items) {
-      appendPhotoToColumn(p, false);
     }
   }
 
   // ========================================
-  // 古いカード削除
+  // 列ごとに順次削除・順次補充
   // ========================================
-  function cleanupOffscreenCards() {
+  function cleanupAndRefillColumns() {
     const containerTop = container.scrollTop;
 
     for (const col of columns) {
-      const cards = Array.from(col.children);
+      let removedCount = 0;
 
-      for (const card of cards) {
-        const cardBottom = card.offsetTop + card.offsetHeight;
+      while (col.firstElementChild) {
+        const first = col.firstElementChild;
+        const cardBottom = first.offsetTop + first.offsetHeight;
 
         if (cardBottom < containerTop - REMOVE_MARGIN) {
-          card.remove();
+          first.remove();
+          removedCount += 1;
+        } else {
+          break;
         }
       }
 
-      while (col.children.length > MAX_CARDS_PER_COLUMN) {
-        col.firstElementChild?.remove();
+      while (removedCount > 0) {
+        const p = getNextDeckItem();
+        if (!p) break;
+        appendPhotoToColumn(col, p, false);
+        removedCount -= 1;
       }
-    }
-  }
 
-  // ========================================
-  // 高さ不足なら追加
-  // ========================================
-  function ensureEnoughCards() {
-    let guard = 0;
-
-    while (
-      grid.offsetHeight < container.clientHeight * MIN_HEIGHT_MULTIPLIER &&
-      guard < 10
-    ) {
-      appendDeckBatch();
-      guard++;
+      while (col.children.length < MIN_CARDS_PER_COLUMN) {
+        const p = getNextDeckItem();
+        if (!p) break;
+        appendPhotoToColumn(col, p, false);
+      }
     }
   }
 
@@ -307,9 +292,7 @@ window.addEventListener("load", () => {
     if (basePhotoData.length === 0) return;
 
     if (!hasAnyCards()) {
-      rebuildDeck();
-      appendDeckBatch(APPEND_BATCH_SIZE * 2);
-      ensureEnoughCards();
+      fillInitialColumns();
     }
 
     started = true;
@@ -323,16 +306,7 @@ window.addEventListener("load", () => {
       const move = SPEED * (delta / (1000 / 60));
       container.scrollTop += move;
 
-      const bottomPos = container.scrollTop + container.clientHeight;
-      const gridHeight = grid.offsetHeight;
-      const THRESHOLD = container.clientHeight * THRESHOLD_MULTIPLIER;
-
-      if (gridHeight - bottomPos < THRESHOLD) {
-        appendDeckBatch();
-      }
-
-      cleanupOffscreenCards();
-      ensureEnoughCards();
+      cleanupAndRefillColumns();
 
       requestAnimationFrame(step);
     }
@@ -449,7 +423,23 @@ window.addEventListener("load", () => {
 
   // ========================================
   // 新規投稿ポーリング
+  // 新着は一旦一番短い列ではなく、最も子要素数が少ない列へ
   // ========================================
+  function pickColumnForNewPost() {
+    let target = columns[0];
+    let minCount = Infinity;
+
+    for (const col of columns) {
+      const count = col.children.length;
+      if (count < minCount) {
+        minCount = count;
+        target = col;
+      }
+    }
+
+    return target;
+  }
+
   async function pollOnce() {
     if (!apiUrl || pollRunning) return;
     pollRunning = true;
@@ -482,7 +472,7 @@ window.addEventListener("load", () => {
           basePhotoData.push(p);
           pickupQueue.push(p);
 
-          appendPhotoToColumn(p, true);
+          appendPhotoToColumn(pickColumnForNewPost(), p, true);
         }
 
         rebuildDeck();
@@ -499,7 +489,6 @@ window.addEventListener("load", () => {
 
   // ========================================
   // いいね更新
-  // 表示中カード + ピックアップのみ更新
   // ========================================
   async function refreshLikesOnce() {
     if (!apiUrl || likeRefreshRunning) return;
@@ -588,9 +577,7 @@ window.addEventListener("load", () => {
   // 初回起動
   // ========================================
   if (basePhotoData.length > 0) {
-    rebuildDeck();
-    appendDeckBatch(APPEND_BATCH_SIZE * 2);
-    ensureEnoughCards();
+    fillInitialColumns();
     startScrollIfNeeded();
     startPickupLoopIfNeeded();
   }
