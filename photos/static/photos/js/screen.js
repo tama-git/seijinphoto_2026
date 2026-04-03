@@ -32,11 +32,9 @@ window.addEventListener("load", () => {
   const SPEED = 0.6;
   const COLUMN_COUNT = 5;
 
-  // 各列で最低限保持したい枚数
-  const MIN_CARDS_PER_COLUMN = 6;
-
-  // 上端からどれだけ見えなくなったら削除するか
-  const REMOVE_MARGIN = 250;
+  // DOM再利用用
+  const INITIAL_CARDS_PER_COLUMN = 10;
+  const RECYCLE_MARGIN = 220;
 
   // ========================================
   // 状態管理
@@ -44,6 +42,7 @@ window.addEventListener("load", () => {
   const knownIds = new Set();
   let basePhotoData = [];
   const pickupQueue = [];
+  const streamQueue = [];
 
   let pickupStarted = false;
   let pickupIntervalId = null;
@@ -67,6 +66,7 @@ window.addEventListener("load", () => {
   // ========================================
   function hideNoPhoto() {
     if (!noPhotoEl) return;
+
     if (basePhotoData.length > 0) {
       noPhotoEl.classList.add("is-hidden");
     } else {
@@ -79,63 +79,12 @@ window.addEventListener("load", () => {
   // ========================================
   function normalizeImageUrl(p) {
     let imgUrl = p.image_url || p.image || "";
+
     if (imgUrl && !imgUrl.startsWith("/") && !imgUrl.startsWith("http")) {
       imgUrl = "/media/" + imgUrl;
     }
+
     return imgUrl;
-  }
-
-  // ========================================
-  // 写真カードDOM生成
-  // ========================================
-  function createCardElement(p) {
-    const idStr = String(p.id ?? "");
-    const name = String(p.name ?? "");
-    const comment = String(p.comment ?? "");
-    const likeCount = Number(p.like_count ?? 0);
-
-    const article = document.createElement("article");
-    article.className = `screen-photo-card ${comment ? "has-message" : "no-message"}`;
-    article.setAttribute("data-photo-id", idStr);
-    article.dataset.likes = String(likeCount);
-
-    const img = document.createElement("img");
-    img.className = "screen-photo-image";
-    img.alt = `photo by ${name}`;
-    img.decoding = "async";
-    img.loading = "lazy";
-    img.src = normalizeImageUrl(p);
-
-    const meta = document.createElement("div");
-    meta.className = "screen-photo-meta";
-
-    const nameSpan = document.createElement("span");
-    nameSpan.className = "screen-name";
-    nameSpan.textContent = name;
-
-    const likeWrap = document.createElement("div");
-    likeWrap.className = "screen-like-display";
-
-    const heart = document.createElement("span");
-    heart.className = `screen-heart ${likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"}`;
-    heart.textContent = likeCount > 0 ? "♥" : "♡";
-
-    const count = document.createElement("span");
-    count.className = "screen-like-count";
-    count.textContent = String(likeCount);
-
-    likeWrap.append(heart, count);
-    meta.append(nameSpan, likeWrap);
-    article.append(img, meta);
-
-    if (comment) {
-      const msg = document.createElement("p");
-      msg.className = "screen-message";
-      msg.textContent = comment;
-      article.appendChild(msg);
-    }
-
-    return article;
   }
 
   // ========================================
@@ -200,6 +149,10 @@ window.addEventListener("load", () => {
   }
 
   function getNextDeckItem() {
+    if (streamQueue.length > 0) {
+      return streamQueue.shift();
+    }
+
     if (basePhotoData.length === 0) return null;
 
     if (shuffledDeck.length === 0 || deckCursor >= shuffledDeck.length) {
@@ -212,23 +165,113 @@ window.addEventListener("load", () => {
   }
 
   // ========================================
-  // 指定列に追加
+  // カード生成
   // ========================================
-  function appendPhotoToColumn(column, photoData, isNew = false) {
-    if (!column || !photoData) return;
+  function createCardElement() {
+    const article = document.createElement("article");
+    article.className = "screen-photo-card no-message";
+    article.dataset.photoId = "";
+    article.dataset.likes = "0";
 
-    const card = createCardElement(photoData);
-    if (isNew) {
-      card.classList.add("is-new");
-    }
+    const img = document.createElement("img");
+    img.className = "screen-photo-image";
+    img.alt = "";
+    img.decoding = "async";
+    img.loading = "lazy";
 
-    column.appendChild(card);
-    hideNoPhoto();
+    const meta = document.createElement("div");
+    meta.className = "screen-photo-meta";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "screen-name";
+
+    const likeWrap = document.createElement("div");
+    likeWrap.className = "screen-like-display";
+
+    const heart = document.createElement("span");
+    heart.className = "screen-heart screen-heart--no-like";
+    heart.textContent = "♡";
+
+    const count = document.createElement("span");
+    count.className = "screen-like-count";
+    count.textContent = "0";
+
+    likeWrap.append(heart, count);
+    meta.append(nameSpan, likeWrap);
+
+    const msg = document.createElement("p");
+    msg.className = "screen-message";
+
+    article.append(img, meta, msg);
+    return article;
   }
 
   // ========================================
-  // 初期埋め
-  // 各列に順番に必要枚数だけ入れる
+  // カード内容更新
+  // ========================================
+  function updateCardElement(card, p, isNew = false) {
+    if (!card || !p) return;
+
+    const idStr = String(p.id ?? "");
+    const name = String(p.name ?? "");
+    const comment = String(p.comment ?? "");
+    const likeCount = Number(p.like_count ?? 0);
+
+    card.dataset.photoId = idStr;
+    card.dataset.likes = String(likeCount);
+
+    card.classList.toggle("has-message", !!comment);
+    card.classList.toggle("no-message", !comment);
+
+    if (isNew) {
+      card.classList.remove("is-new");
+      // 再描画トリガー
+      void card.offsetWidth;
+      card.classList.add("is-new");
+    } else {
+      card.classList.remove("is-new");
+    }
+
+    const img = card.querySelector(".screen-photo-image");
+    if (img) {
+      img.src = normalizeImageUrl(p);
+      img.alt = `photo by ${name}`;
+    }
+
+    const nameEl = card.querySelector(".screen-name");
+    if (nameEl) nameEl.textContent = name;
+
+    const countEl = card.querySelector(".screen-like-count");
+    if (countEl) countEl.textContent = String(likeCount);
+
+    const heartEl = card.querySelector(".screen-heart");
+    if (heartEl) {
+      heartEl.textContent = likeCount > 0 ? "♥" : "♡";
+      heartEl.className = `screen-heart ${
+        likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
+      }`;
+    }
+
+    const msgEl = card.querySelector(".screen-message");
+    if (msgEl) {
+      msgEl.textContent = comment;
+      msgEl.style.display = comment ? "" : "none";
+    }
+  }
+
+  // ========================================
+  // カード1枚の見た目高さ
+  // margin-bottom含む
+  // ========================================
+  function getCardOuterHeight(card) {
+    if (!card) return 0;
+    const styles = window.getComputedStyle(card);
+    const mb = parseFloat(styles.marginBottom || "0");
+    return card.offsetHeight + mb;
+  }
+
+  // ========================================
+  // 初期プール作成
   // ========================================
   function fillInitialColumns() {
     if (basePhotoData.length === 0) return;
@@ -236,47 +279,52 @@ window.addEventListener("load", () => {
     rebuildDeck();
 
     for (const col of columns) {
-      while (col.children.length < MIN_CARDS_PER_COLUMN) {
+      while (col.children.length < INITIAL_CARDS_PER_COLUMN) {
         const p = getNextDeckItem();
         if (!p) break;
-        appendPhotoToColumn(col, p, false);
+
+        const card = createCardElement();
+        updateCardElement(card, p, false);
+        col.appendChild(card);
       }
     }
   }
 
   // ========================================
-  // 列ごとに順次削除・順次補充
+  // DOM再利用
+  // 上に流れ切ったカードを、同じ列の下に回して中身だけ差し替える
   // ========================================
-  function cleanupAndRefillColumns() {
-    const containerTop = container.scrollTop;
+  function recycleColumnsIfNeeded() {
+    const containerRect = container.getBoundingClientRect();
+    let maxAdjustment = 0;
 
     for (const col of columns) {
-      let removedCount = 0;
+      let movedHeight = 0;
 
       while (col.firstElementChild) {
         const first = col.firstElementChild;
-        const cardBottom = first.offsetTop + first.offsetHeight;
+        const rect = first.getBoundingClientRect();
 
-        if (cardBottom < containerTop - REMOVE_MARGIN) {
-          first.remove();
-          removedCount += 1;
+        if (rect.bottom < containerRect.top - RECYCLE_MARGIN) {
+          const h = getCardOuterHeight(first);
+          const nextPhoto = getNextDeckItem();
+          if (!nextPhoto) break;
+
+          updateCardElement(first, nextPhoto, false);
+          col.appendChild(first);
+          movedHeight += h;
         } else {
           break;
         }
       }
 
-      while (removedCount > 0) {
-        const p = getNextDeckItem();
-        if (!p) break;
-        appendPhotoToColumn(col, p, false);
-        removedCount -= 1;
+      if (movedHeight > maxAdjustment) {
+        maxAdjustment = movedHeight;
       }
+    }
 
-      while (col.children.length < MIN_CARDS_PER_COLUMN) {
-        const p = getNextDeckItem();
-        if (!p) break;
-        appendPhotoToColumn(col, p, false);
-      }
+    if (maxAdjustment > 0) {
+      container.scrollTop -= maxAdjustment;
     }
   }
 
@@ -306,7 +354,7 @@ window.addEventListener("load", () => {
       const move = SPEED * (delta / (1000 / 60));
       container.scrollTop += move;
 
-      cleanupAndRefillColumns();
+      recycleColumnsIfNeeded();
 
       requestAnimationFrame(step);
     }
@@ -423,23 +471,8 @@ window.addEventListener("load", () => {
 
   // ========================================
   // 新規投稿ポーリング
-  // 新着は一旦一番短い列ではなく、最も子要素数が少ない列へ
+  // 新着は優先キューへ積み、次の再利用タイミングで表示に混ぜる
   // ========================================
-  function pickColumnForNewPost() {
-    let target = columns[0];
-    let minCount = Infinity;
-
-    for (const col of columns) {
-      const count = col.children.length;
-      if (count < minCount) {
-        minCount = count;
-        target = col;
-      }
-    }
-
-    return target;
-  }
-
   async function pollOnce() {
     if (!apiUrl || pollRunning) return;
     pollRunning = true;
@@ -471,14 +504,16 @@ window.addEventListener("load", () => {
 
           basePhotoData.push(p);
           pickupQueue.push(p);
-
-          appendPhotoToColumn(pickColumnForNewPost(), p, true);
+          streamQueue.push(p);
         }
 
         rebuildDeck();
 
-        if (!started) startScrollIfNeeded();
-        startPickupLoopIfNeeded();
+        if (!started && basePhotoData.length > 0) {
+          fillInitialColumns();
+          startScrollIfNeeded();
+          startPickupLoopIfNeeded();
+        }
       }
     } catch (e) {
       console.warn(e);
@@ -489,6 +524,7 @@ window.addEventListener("load", () => {
 
   // ========================================
   // いいね更新
+  // 表示中カード + ピックアップのみ更新
   // ========================================
   async function refreshLikesOnce() {
     if (!apiUrl || likeRefreshRunning) return;
