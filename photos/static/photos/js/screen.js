@@ -29,7 +29,8 @@ window.addEventListener("load", () => {
   const PICKUP_SHOW_MS = 8000;
 
   // 1秒あたり何px流すか
-  const BASE_PX_PER_SEC = 18;
+  //スクロール速度
+  const BASE_PX_PER_SEC = 24;
 
   // ========================================
   // 状態
