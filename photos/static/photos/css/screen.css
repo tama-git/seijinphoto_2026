@@ -234,80 +234,74 @@ body::-webkit-scrollbar {
 /* ========================================
    ピックアップ表示
 ======================================== */
-:root {
-  --pickup-h: 78vh;
+:root{
+ --pickup-h: 78vh;
 }
-
-.pickup-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-
-  display: grid;
-  place-items: center;
-
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease;
+.pickup-overlay{
+ position: fixed;
+ inset: 0;
+ display: grid;
+ place-items: center;
+ opacity: 0;
+ pointer-events: none;
+ z-index: 9999;
+ transition: opacity 0.25s ease;
 }
-
-.pickup-overlay.is-show {
-  opacity: 1;
-  pointer-events: auto;
+.pickup-overlay.is-show{
+ opacity: 1;
+ pointer-events: auto;
 }
-
-.pickup-card {
-  display: inline-flex;
-  flex-direction: column;
-
-  width: fit-content;
-  max-width: 96vw;
-
-  padding: 0;
-  overflow: hidden;
-
-  background: #ffffff;
-  border: none;
-  border-radius: 5px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
-
-  transform: translateY(10px) scale(0.98);
-  transition: transform 0.25s ease;
+.pickup-card{
+ display: inline-flex;
+ flex-direction: column;
+ width: fit-content;
+ max-width: 96vw;
+ background: #ffffff;
+ border: 1px solid #e0e0e0;
+ border-radius: 5px;
+ padding: 0 0 4px;
+ box-shadow: 0 20px 60px rgba(0,0,0,0.22);
+ overflow: hidden;
+ transform: translateY(10px) scale(0.98);
+ transition: transform 0.25s ease;
 }
-
-.pickup-overlay.is-show .pickup-card {
-  transform: translateY(0) scale(1);
+.pickup-overlay.is-show .pickup-card{
+ transform: translateY(0) scale(1);
 }
-
-.pickup-image-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+.pickup-image-wrap{
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ overflow: hidden;
 }
-
-.pickup-image-wrap img {
-  width: auto;
-  height: auto;
-  max-width: 92vw;
-  max-height: 72vh;
-  object-fit: contain;
-  display: block;
+.pickup-image-wrap img{
+ height: var(--pickup-h);
+ width: auto;
+ max-width: 96vw;
+ object-fit: contain;
+ display: block;
 }
-
-.pickup-card--portrait .pickup-image-wrap img {
- max-height: 78vh;
- max-width: 88vw;
+.pickup-card .screen-name{
+ font-size: 24px;
+ font-weight: 700;
+ line-height: 1.1;
 }
-.pickup-card--landscape .pickup-image-wrap img {
- max-width: 92vw;
- max-height: 62vh;
+.pickup-card .screen-message{
+ font-size: 21px;
+ line-height: 1.25;
+ padding: 8px 12px 10px;
 }
-.pickup-card--landscape {
- max-width: 94vw;
+.pickup-card .screen-like-count{
+ font-size: 24px;
+ font-weight: 700;
+ line-height: 1.1;
 }
-.pickup-card--portrait {
- max-width: 88vw;
+.pickup-card .screen-heart{
+ font-size: 27px;
+ line-height: 1;
+}
+.pickup-card .screen-photo-meta{
+ padding: 10px 12px;
 }
 
 /* ========================================
