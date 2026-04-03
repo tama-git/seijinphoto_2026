@@ -128,7 +128,7 @@ body::-webkit-scrollbar {
   margin-bottom: 0;
 
   background: #ffffff;
-  border: 1px solid #e0e0e0;
+  border: none;
   border-radius: 5px;
   break-inside: avoid;
 }
@@ -156,15 +156,13 @@ body::-webkit-scrollbar {
    写真本体
 ======================================== */
 .screen-photo-image {
-  width: 100%;
-  height: auto;
   display: block;
-  object-fit: cover;
-  border-radius: 5px 5px 0 0;
-  aspect-ratio: 3 / 4;
-  min-height: 200px;
-  background: #222;
+  width: auto;
+  height: var(--pickup-h);
+  max-width: 96vw;
+  object-fit: contain;
 }
+
 
 /* ========================================
    メタ情報（名前・いいね）
@@ -257,7 +255,7 @@ body::-webkit-scrollbar {
  width: fit-content;
  max-width: 96vw;
  background: #ffffff;
- border: 1px solid #e0e0e0;
+ border: none;
  border-radius: 5px;
  padding: 0 0 4px;
  box-shadow: 0 20px 60px rgba(0,0,0,0.22);
