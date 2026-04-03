@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'photos/css/screen.css' %}?v=20251224-3">
+<link rel="stylesheet" href="{% static 'photos/css/screen.css' %}?v={% now 'U' %}">
 {% endblock %}
 
 {% block content %}
