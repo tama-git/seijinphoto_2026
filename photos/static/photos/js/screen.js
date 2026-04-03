@@ -28,9 +28,11 @@ window.addEventListener("load", () => {
   const PICKUP_EVERY_MS = 60000;
   const PICKUP_SHOW_MS = 8000;
 
-  // 1秒あたり何px流すか
-  //スクロール速度
+  // スクロール速度
   const BASE_PX_PER_SEC = 24;
+
+  // 直近何枚ぶん同じ写真を避けるか
+  const AVOID_RECENT_COUNT = 2;
 
   // ========================================
   // 状態
@@ -159,41 +161,63 @@ window.addEventListener("load", () => {
     return article;
   }
 
-  function duplicateCards(items) {
-    return items.map((p) => createCardElement(p));
+  function pickWithoutRecent(pool, recentIds) {
+    if (pool.length === 0) return null;
+
+    const candidates = pool.filter((item) => !recentIds.includes(String(item.id)));
+    const targetPool = candidates.length > 0 ? candidates : pool;
+    const picked = targetPool[Math.floor(Math.random() * targetPool.length)];
+
+    const pickedIndex = pool.findIndex((item) => String(item.id) === String(picked.id));
+    if (pickedIndex >= 0) {
+      pool.splice(pickedIndex, 1);
+    }
+
+    return picked;
   }
 
-  function splitIntoColumns(items, columnCount) {
-    const cols = Array.from({ length: columnCount }, () => []);
-
-    items.forEach((item, index) => {
-      cols[index % columnCount].push(item);
-    });
-
-    return cols;
-  }
-
-  function normalizeColumnItems(items, minCount) {
-    if (items.length === 0) return [];
+  function buildBalancedSequence(sourceItems, targetLength, recentWindow = AVOID_RECENT_COUNT) {
+    if (!sourceItems.length) return [];
 
     const result = [];
-    let i = 0;
+    let pool = shuffle(sourceItems);
 
-    while (result.length < minCount) {
-      result.push(items[i % items.length]);
-      i += 1;
+    while (result.length < targetLength) {
+      if (pool.length === 0) {
+        pool = shuffle(sourceItems);
+      }
+
+      const recentIds = result.slice(-recentWindow).map((item) => String(item.id));
+      const picked = pickWithoutRecent(pool, recentIds);
+
+      if (!picked) break;
+      result.push(picked);
     }
 
     return result;
   }
 
   function buildColumnFeed(allPhotos) {
-    if (allPhotos.length === 0) return Array.from({ length: COLUMN_COUNT }, () => []);
+    if (allPhotos.length === 0) {
+      return Array.from({ length: COLUMN_COUNT }, () => ({
+        feedA: [],
+        feedB: [],
+      }));
+    }
 
-    const shuffled = shuffle(allPhotos);
-    const distributed = splitIntoColumns(shuffled, COLUMN_COUNT);
+    const columnFeeds = [];
 
-    return distributed.map((colItems) => normalizeColumnItems(colItems, MIN_ITEMS_PER_COLUMN));
+    for (let i = 0; i < COLUMN_COUNT; i++) {
+      const feedA = buildBalancedSequence(allPhotos, MIN_ITEMS_PER_COLUMN, 2);
+      const feedB = buildBalancedSequence(allPhotos, MIN_ITEMS_PER_COLUMN, 3);
+
+      columnFeeds.push({
+        feedA,
+        feedB,
+      });
+    }
+
+    return columnFeeds;
   }
 
   // ========================================
@@ -201,7 +225,6 @@ window.addEventListener("load", () => {
   // ========================================
   function renderColumns() {
     const columns = Array.from(grid.querySelectorAll(".screen-column"));
-
     if (columns.length === 0) return;
 
     columns.forEach((col) => {
@@ -216,8 +239,8 @@ window.addEventListener("load", () => {
     const columnFeeds = buildColumnFeed(basePhotoData);
 
     columns.forEach((col, index) => {
-      const feed = columnFeeds[index];
-      if (!feed || feed.length === 0) return;
+      const feeds = columnFeeds[index];
+      if (!feeds || feeds.feedA.length === 0) return;
 
       const track = document.createElement("div");
       track.className = "screen-column-track";
@@ -228,8 +251,13 @@ window.addEventListener("load", () => {
       const groupB = document.createElement("div");
       groupB.className = "screen-column-group";
 
-      duplicateCards(feed).forEach((card) => groupA.appendChild(card));
-      duplicateCards(feed).forEach((card) => groupB.appendChild(card));
+      feeds.feedA
+        .map((p) => createCardElement(p))
+        .forEach((card) => groupA.appendChild(card));
+
+      feeds.feedB
+        .map((p) => createCardElement(p))
+        .forEach((card) => groupB.appendChild(card));
 
       track.append(groupA, groupB);
       col.appendChild(track);
@@ -359,7 +387,6 @@ window.addEventListener("load", () => {
 
   // ========================================
   // 新規投稿ポーリング
-  // 新着が来たら列を再構築
   // ========================================
   async function pollOnce() {
     if (!apiUrl || pollRunning) return;
@@ -406,7 +433,6 @@ window.addEventListener("load", () => {
 
   // ========================================
   // いいね更新
-  // 表示中カード + ピックアップのみ更新
   // ========================================
   async function refreshLikesOnce() {
     if (!apiUrl || likeRefreshRunning) return;
@@ -442,8 +468,7 @@ window.addEventListener("load", () => {
         const heartEl = article.querySelector(".screen-heart");
         if (heartEl) {
           heartEl.textContent = likeCount > 0 ? "♥" : "♡";
-          heartEl.className = `screen-heart ${likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
-            }`;
+          heartEl.className = `screen-heart ${likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"}`;
         }
       }
 
@@ -452,8 +477,7 @@ window.addEventListener("load", () => {
         const likeCount = photoMap.get(pickupId) ?? 0;
         pickupLikeCount.textContent = String(likeCount);
         pickupHeart.textContent = likeCount > 0 ? "♥" : "♡";
-        pickupHeart.className = `screen-heart ${likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
-          }`;
+        pickupHeart.className = `screen-heart ${likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"}`;
       }
 
       for (const p of basePhotoData) {
