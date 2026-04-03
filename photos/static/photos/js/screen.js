@@ -25,20 +25,20 @@ window.addEventListener("load", () => {
   // ========================================
   // 設定
   // ========================================
-  const POLL_MS = 2000;               // 新規投稿ポーリング間隔
-  const LIKE_REFRESH_MS = 10000;      // いいね更新間隔
+  const POLL_MS = 2000;
+  const LIKE_REFRESH_MS = 10000;
   const PICKUP_FIRST_DELAY_MS = 5 * 1000;
   const PICKUP_EVERY_MS = 60 * 1000;
   const PICKUP_SHOW_MS = 8 * 1000;
 
-  const MIN_HEIGHT_MULTIPLIER = 2.2;  // 表示に必要な最低高さ
+  const MIN_HEIGHT_MULTIPLIER = 2.2;
   const SPEED = 0.6;
 
   // 負荷対策
-  const MAX_CARDS_PER_COLUMN = 35;    // 1列あたりの最大保持数
-  const REMOVE_MARGIN = 500;          // 上に流れてから削除する余白
-  const APPEND_BATCH_SIZE = 8;        // 1回に追加する枚数
-  const THRESHOLD_MULTIPLIER = 2;     // 下端近くで追加入力するしきい値
+  const MAX_CARDS_PER_COLUMN = 35;
+  const REMOVE_MARGIN = 500;
+  const APPEND_BATCH_SIZE = 8;
+  const THRESHOLD_MULTIPLIER = 2;
 
   // ========================================
   // 状態管理
@@ -62,6 +62,9 @@ window.addEventListener("load", () => {
 
   let shuffledDeck = [];
   let deckCursor = 0;
+
+  // 順番投入用
+  let nextColumnIndex = 0;
 
   // ========================================
   // 0件表示切り替え
@@ -186,34 +189,25 @@ window.addEventListener("load", () => {
   hideNoPhoto();
 
   // ========================================
-  // 最短列取得
+  // 順番に列を選ぶ
   // ========================================
-  function pickShortestColumn() {
-    let minH = Infinity;
-    let target = columns[0];
-
-    for (const col of columns) {
-      const h = col.scrollHeight;
-      if (h < minH) {
-        minH = h;
-        target = col;
-      }
-    }
-
+  function pickNextColumn() {
+    const target = columns[nextColumnIndex];
+    nextColumnIndex = (nextColumnIndex + 1) % columns.length;
     return target;
   }
 
   // ========================================
   // 写真追加
   // ========================================
-  function appendPhotoToShortestColumn(photoData, isNew = false) {
+  function appendPhotoToColumn(photoData, isNew = false) {
     const card = createCardElement(photoData);
 
     if (isNew) {
       card.classList.add("is-new");
     }
 
-    pickShortestColumn().appendChild(card);
+    pickNextColumn().appendChild(card);
     hideNoPhoto();
   }
 
@@ -259,7 +253,7 @@ window.addEventListener("load", () => {
   function appendDeckBatch(count = APPEND_BATCH_SIZE) {
     const items = getNextDeckItems(count);
     for (const p of items) {
-      appendPhotoToShortestColumn(p, false);
+      appendPhotoToColumn(p, false);
     }
   }
 
@@ -488,7 +482,7 @@ window.addEventListener("load", () => {
           basePhotoData.push(p);
           pickupQueue.push(p);
 
-          appendPhotoToShortestColumn(p, true);
+          appendPhotoToColumn(p, true);
         }
 
         rebuildDeck();
