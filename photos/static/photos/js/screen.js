@@ -28,6 +28,9 @@ window.addEventListener("load", () => {
   const PICKUP_EVERY_MS = 60000;
   const PICKUP_SHOW_MS = 8000;
 
+  // 新着差分反映間隔
+  const APPEND_NEW_PHOTOS_MS = 2500;
+
   // スクロール速度
   const BASE_PX_PER_SEC = 24;
 
@@ -50,6 +53,10 @@ window.addEventListener("load", () => {
 
   let pollRunning = false;
   let likeRefreshRunning = false;
+
+  // 差分追加用
+  let nextAppendColumnIndex = 0;
+  const pendingNewPhotos = [];
 
   // ========================================
   // 0件表示切り替え
@@ -110,7 +117,7 @@ window.addEventListener("load", () => {
     return copied;
   }
 
-  function createCardElement(p) {
+  function createCardElement(p, isNew = false) {
     const idStr = String(p.id ?? "");
     const name = String(p.name ?? "");
     const comment = String(p.comment ?? "");
@@ -118,6 +125,11 @@ window.addEventListener("load", () => {
 
     const article = document.createElement("article");
     article.className = `screen-photo-card ${comment ? "has-message" : "no-message"}`;
+
+    if (isNew) {
+      article.classList.add("is-new");
+    }
+
     article.setAttribute("data-photo-id", idStr);
     article.dataset.likes = String(likeCount);
 
@@ -127,6 +139,8 @@ window.addEventListener("load", () => {
     img.decoding = "async";
     img.loading = "lazy";
     img.src = normalizeImageUrl(p);
+
+
 
     const meta = document.createElement("div");
     meta.className = "screen-photo-meta";
@@ -220,6 +234,78 @@ window.addEventListener("load", () => {
     return columnFeeds;
   }
 
+  function updateTrackAnimation(track, groupA, index) {
+    if (!track || !groupA) return;
+
+    requestAnimationFrame(() => {
+      const distance = groupA.offsetHeight;
+      if (distance <= 0) return;
+
+      const pxPerSec = BASE_PX_PER_SEC + index * 1.5;
+      const duration = Math.max(distance / pxPerSec, 18);
+
+      track.style.setProperty("--loop-distance", `${distance}px`);
+      track.style.setProperty("--loop-duration", `${duration}s`);
+      track.style.animationDelay = `${-index * 2}s`;
+    });
+  }
+
+  function getColumnParts(col) {
+    const track = col.querySelector(".screen-column-track");
+    if (!track) return null;
+
+    const groups = track.querySelectorAll(".screen-column-group");
+    const groupA = groups[0] || null;
+    const groupB = groups[1] || null;
+
+    if (!groupA || !groupB) return null;
+
+    return { track, groupA, groupB };
+  }
+
+  function appendPhotoToColumn(p) {
+    const columns = Array.from(grid.querySelectorAll(".screen-column"));
+    if (columns.length === 0) return;
+
+    const targetIndex = nextAppendColumnIndex % columns.length;
+    const targetColumn = columns[targetIndex];
+    const parts = getColumnParts(targetColumn);
+
+    if (!parts) return;
+
+    const { track, groupA, groupB } = parts;
+
+    // ループを保つため A/B 両方に同じカードを追加
+    groupA.appendChild(createCardElement(p, true));
+    groupB.appendChild(createCardElement(p, true));
+
+    updateTrackAnimation(track, groupA, targetIndex);
+
+    nextAppendColumnIndex = (nextAppendColumnIndex + 1) % columns.length;
+  }
+
+  function flushPendingNewPhotos() {
+    if (pendingNewPhotos.length === 0) return;
+    if (basePhotoData.length === 0) return;
+
+    const photosToAppend = pendingNewPhotos.splice(0, pendingNewPhotos.length);
+
+    photosToAppend.forEach((p) => {
+      appendPhotoToColumn(p);
+    });
+
+    hideNoPhoto();
+  }
+
+  function startAppendLoop() {
+    (function loop() {
+      setTimeout(() => {
+        flushPendingNewPhotos();
+        loop();
+      }, APPEND_NEW_PHOTOS_MS);
+    })();
+  }
+
   // ========================================
   // 列描画
   // ========================================
@@ -262,19 +348,10 @@ window.addEventListener("load", () => {
       track.append(groupA, groupB);
       col.appendChild(track);
 
-      requestAnimationFrame(() => {
-        const distance = groupA.offsetHeight;
-        if (distance <= 0) return;
-
-        const pxPerSec = BASE_PX_PER_SEC + index * 1.5;
-        const duration = Math.max(distance / pxPerSec, 18);
-
-        track.style.setProperty("--loop-distance", `${distance}px`);
-        track.style.setProperty("--loop-duration", `${duration}s`);
-        track.style.animationDelay = `${-index * 2}s`;
-      });
+      updateTrackAnimation(track, groupA, index);
     });
 
+    nextAppendColumnIndex = 0;
     hideNoPhoto();
   }
 
@@ -405,6 +482,8 @@ window.addEventListener("load", () => {
       const photos = Array.isArray(data) ? data : (data.photos || []);
 
       if (photos.length > 0) {
+        let hasRealNewPhoto = false;
+
         for (const p of photos) {
           const n = Number(p.id);
           if (!Number.isNaN(n)) {
@@ -419,10 +498,14 @@ window.addEventListener("load", () => {
 
           basePhotoData.push(p);
           pickupQueue.push(p);
+          pendingNewPhotos.push(p);
+          hasRealNewPhoto = true;
         }
 
-        renderColumns();
-        startPickupLoopIfNeeded();
+        if (hasRealNewPhoto) {
+          hideNoPhoto();
+          startPickupLoopIfNeeded();
+        }
       }
     } catch (e) {
       console.warn(e);
@@ -521,6 +604,8 @@ window.addEventListener("load", () => {
     startPickupLoopIfNeeded();
   }
 
+  startAppendLoop();
   startLikeRefreshLoop();
   startPollLoop();
 });
+

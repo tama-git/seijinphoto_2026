@@ -1,6 +1,10 @@
 /* ========================================
    スクリーン画面全体
 ======================================== */
+:root {
+  --pickup-h: 78vh;
+}
+
 .screen-body {
   margin: 0;
   position: relative;
@@ -83,6 +87,7 @@ body::-webkit-scrollbar {
   min-width: 0;
   position: relative;
   overflow: hidden;
+  contain: layout paint;
 }
 
 .screen-column-track {
@@ -93,6 +98,8 @@ body::-webkit-scrollbar {
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   animation-duration: var(--loop-duration, 40s);
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .screen-column-group {
@@ -103,10 +110,10 @@ body::-webkit-scrollbar {
 
 @keyframes screenColumnLoop {
   from {
-    transform: translateY(0);
+    transform: translateY(0) translateZ(0);
   }
   to {
-    transform: translateY(calc(-1 * var(--loop-distance, 0px)));
+    transform: translateY(calc(-1 * var(--loop-distance, 0px))) translateZ(0);
   }
 }
 
@@ -131,6 +138,8 @@ body::-webkit-scrollbar {
   border: none;
   border-radius: 5px;
   break-inside: avoid;
+  overflow: hidden;
+  contain: paint;
 }
 
 /* コメントが無い場合は下余白を抑える */
@@ -141,8 +150,8 @@ body::-webkit-scrollbar {
 /* 追加直後の表示アニメーション */
 .screen-photo-card.is-new {
   opacity: 0;
-  transform: translateY(16px) scale(0.97);
-  animation: screenCardIn 0.4s ease-out forwards;
+  transform: translateY(10px) scale(0.985);
+  animation: screenCardIn 0.28s ease-out forwards;
 }
 
 @keyframes screenCardIn {
@@ -161,8 +170,9 @@ body::-webkit-scrollbar {
   display: block;
   object-fit: cover;
   border-radius: 5px 5px 0 0;
+  background: #f6f6f6;
+  vertical-align: bottom;
 }
-
 
 /* ========================================
    メタ情報（名前・いいね）
@@ -232,10 +242,7 @@ body::-webkit-scrollbar {
 /* ========================================
    ピックアップ表示
 ======================================== */
-:root{
- --pickup-h: 78vh;
-
-.pickup-image{
+.pickup-image {
   height: var(--pickup-h);
   width: auto;
   max-width: 96vw;
@@ -243,77 +250,56 @@ body::-webkit-scrollbar {
   display: block;
 }
 
-}
-.pickup-overlay{
- position: fixed;
- inset: 0;
- display: grid;
- place-items: center;
- opacity: 0;
- pointer-events: none;
- z-index: 9999;
- transition: opacity 0.25s ease;
-}
-.pickup-overlay.is-show{
- opacity: 1;
- pointer-events: auto;
-}
-.pickup-card{
- display: inline-flex;
- flex-direction: column;
- width: fit-content;
- max-width: 96vw;
- background: #ffffff;
- border: none;
- border-radius: 5px;
- padding: 0 0 4px;
- box-shadow: 0 20px 60px rgba(0,0,0,0.22);
- overflow: hidden;
- transform: translateY(10px) scale(0.98);
- transition: transform 0.25s ease;
-}
-.pickup-overlay.is-show .pickup-card{
- transform: translateY(0) scale(1);
-}
-.pickup-image-wrap{
- display: flex;
- align-items: center;
- justify-content: center;
- overflow: hidden;
-}
-.pickup-image-wrap img{
- height: var(--pickup-h);
- width: auto;
- max-width: 96vw;
- object-fit: contain;
- display: block;
-}
-.pickup-card .screen-name{
- font-size: 24px;
- font-weight: 700;
- line-height: 1.1;
-}
-.pickup-card .screen-message{
- font-size: 21px;
- line-height: 1.25;
- padding: 8px 12px 10px;
-}
-.pickup-card .screen-like-count{
- font-size: 24px;
- font-weight: 700;
- line-height: 1.1;
-}
-.pickup-card .screen-heart{
- font-size: 27px;
- line-height: 1;
-}
-.pickup-card .screen-photo-meta{
- padding: 10px 12px;
+.pickup-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 0.25s ease;
 }
 
-/* ========================================
-   ピックアップ内の文字サイズ調整
-======================================== */
+.pickup-overlay.is-show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pickup-card {
+  display: inline-flex;
+  flex-direction: column;
+  width: fit-content;
+  max-width: 96vw;
+  background: #ffffff;
+  border: none;
+  border-radius: 5px;
+  padding: 0 0 4px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  transform: translateY(10px) scale(0.98);
+  transition: transform 0.25s ease;
+}
+
+.pickup-overlay.is-show .pickup-card {
+  transform: translateY(0) scale(1);
+}
+
+.pickup-image-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.pickup-image-wrap img {
+  height: var(--pickup-h);
+  width: auto;
+  max-width: 96vw;
+  object-fit: contain;
+  display: block;
+}
+
 .pickup-card .screen-name {
   font-size: 24px;
   font-weight: 700;
