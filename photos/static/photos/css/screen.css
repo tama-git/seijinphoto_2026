@@ -115,7 +115,7 @@ body::-webkit-scrollbar {
 }
 
 .is-hidden {
-  display: none !important;
+  display: none;
 }
 
 /* ========================================
@@ -156,12 +156,13 @@ body::-webkit-scrollbar {
    写真本体
 ======================================== */
 .screen-photo-image {
+  width: 100%;
+  height: auto;
   display: block;
-  width: auto;
-  height: var(--pickup-h);
-  max-width: 96vw;
-  object-fit: contain;
+  object-fit: cover;
+  border-radius: 5px 5px 0 0;
 }
+
 
 /* ========================================
    メタ情報（名前・いいね）
@@ -233,6 +234,15 @@ body::-webkit-scrollbar {
 ======================================== */
 :root{
  --pickup-h: 78vh;
+
+.pickup-image{
+  height: var(--pickup-h);
+  width: auto;
+  max-width: 96vw;
+  object-fit: contain;
+  display: block;
+}
+
 }
 .pickup-overlay{
  position: fixed;
