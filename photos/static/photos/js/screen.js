@@ -22,41 +22,52 @@ window.addEventListener("load", () => {
   // APIエンドポイント
   const apiUrl = container.dataset.apiUrl || "";
 
-  // 新規投稿ポーリング間隔
-  const POLL_MS = 1000;
+  // ========================================
+  // 設定
+  // ========================================
+  const POLL_MS = 2000;               // 新規投稿ポーリング間隔
+  const LIKE_REFRESH_MS = 10000;      // いいね更新間隔
+  const PICKUP_FIRST_DELAY_MS = 5 * 1000;
+  const PICKUP_EVERY_MS = 60 * 1000;
+  const PICKUP_SHOW_MS = 8 * 1000;
+
+  const MIN_HEIGHT_MULTIPLIER = 2.2;  // 表示に必要な最低高さ
+  const SPEED = 0.6;
+
+  // 負荷対策
+  const MAX_CARDS_PER_COLUMN = 35;    // 1列あたりの最大保持数
+  const REMOVE_MARGIN = 500;          // 上に流れてから削除する余白
+  const APPEND_BATCH_SIZE = 8;        // 1回に追加する枚数
+  const THRESHOLD_MULTIPLIER = 2;     // 下端近くで追加入力するしきい値
 
   // ========================================
-  // ピックアップ表示設定
+  // 状態管理
   // ========================================
-  const PICKUP_FIRST_DELAY_MS = 5 * 1000;  // 初回表示までの待機時間
-  const PICKUP_EVERY_MS = 60 * 1000;       // ピックアップ表示間隔
-  const PICKUP_SHOW_MS = 8 * 1000;         // 表示時間
-
-  // ========================================
-  // 状態管理用データ
-  // ========================================
-
-  // すでに表示済みの投稿ID
   const knownIds = new Set();
-
-  // スクリーン表示に使う投稿データ
   let basePhotoData = [];
-
-  // 新着投稿を優先してピックアップするためのキュー
   const pickupQueue = [];
 
   let pickupStarted = false;
-  let pickupIntervalId = null; // 現状 clearInterval は未使用
+  let pickupIntervalId = null;
   let pickupHideTimer = null;
   let pickupVisible = false;
   let lastPickupId = null;
 
+  let started = false;
+  let lastTs = null;
+  let lastId = 0;
+
+  let pollRunning = false;
+  let likeRefreshRunning = false;
+
+  let shuffledDeck = [];
+  let deckCursor = 0;
+
   // ========================================
-  // 写真0件時の表示切り替え
+  // 0件表示切り替え
   // ========================================
   function hideNoPhoto() {
     if (!noPhotoEl) return;
-
     if (basePhotoData.length > 0) {
       noPhotoEl.classList.add("is-hidden");
     } else {
@@ -65,8 +76,7 @@ window.addEventListener("load", () => {
   }
 
   // ========================================
-  // 画像URLの正規化
-  // 相対パスの場合は /media/ を補完する
+  // 画像URL正規化
   // ========================================
   function normalizeImageUrl(p) {
     let imgUrl = p.image_url || p.image || "";
@@ -90,11 +100,13 @@ window.addEventListener("load", () => {
     const article = document.createElement("article");
     article.className = `screen-photo-card ${comment ? "has-message" : "no-message"}`;
     article.setAttribute("data-photo-id", idStr);
+    article.dataset.likes = String(likeCount);
 
     const img = document.createElement("img");
     img.className = "screen-photo-image";
     img.alt = `photo by ${name}`;
     img.decoding = "async";
+    img.loading = "lazy";
     img.src = normalizeImageUrl(p);
 
     const meta = document.createElement("div");
@@ -117,7 +129,6 @@ window.addEventListener("load", () => {
 
     likeWrap.append(heart, count);
     meta.append(nameSpan, likeWrap);
-
     article.append(img, meta);
 
     if (comment) {
@@ -149,7 +160,6 @@ window.addEventListener("load", () => {
 
   // ========================================
   // 初期データ読み込み
-  // サーバー側で埋め込まれた投稿情報を取り込む
   // ========================================
   if (initialDataBox) {
     const dataEls = initialDataBox.querySelectorAll(".screen-photo-card-data");
@@ -159,19 +169,24 @@ window.addEventListener("load", () => {
         id: el.dataset.id,
         image_url: el.dataset.image,
         name: el.dataset.name,
-        like_count: el.dataset.likes,
+        like_count: Number(el.dataset.likes ?? 0),
         comment: el.dataset.comment,
       };
 
       basePhotoData.push(p);
       knownIds.add(String(p.id));
+
+      const n = Number(p.id);
+      if (!Number.isNaN(n)) {
+        lastId = Math.max(lastId, n);
+      }
     });
   }
 
   hideNoPhoto();
 
   // ========================================
-  // 一番高さが低い列を取得
+  // 最短列取得
   // ========================================
   function pickShortestColumn() {
     let minH = Infinity;
@@ -189,19 +204,21 @@ window.addEventListener("load", () => {
   }
 
   // ========================================
-  // 写真を最短列に追加
+  // 写真追加
   // ========================================
   function appendPhotoToShortestColumn(photoData, isNew = false) {
     const card = createCardElement(photoData);
 
-    if (isNew) card.classList.add("is-new");
+    if (isNew) {
+      card.classList.add("is-new");
+    }
 
     pickShortestColumn().appendChild(card);
     hideNoPhoto();
   }
 
   // ========================================
-  // 配列シャッフル
+  // シャッフル
   // ========================================
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -211,28 +228,82 @@ window.addEventListener("load", () => {
   }
 
   // ========================================
-  // 表示用デッキ追加
-  // 既存投稿をシャッフルして流し続ける
+  // 表示用デッキ
   // ========================================
-  function appendDeck() {
-    if (basePhotoData.length === 0) return;
+  function rebuildDeck() {
+    shuffledDeck = [...basePhotoData];
+    shuffle(shuffledDeck);
+    deckCursor = 0;
+  }
 
-    const deck = [...basePhotoData];
-    shuffle(deck);
+  function getNextDeckItems(count) {
+    if (basePhotoData.length === 0) return [];
 
-    for (const p of deck) {
+    if (shuffledDeck.length === 0 || deckCursor >= shuffledDeck.length) {
+      rebuildDeck();
+    }
+
+    const items = [];
+
+    for (let i = 0; i < count; i++) {
+      if (deckCursor >= shuffledDeck.length) {
+        rebuildDeck();
+      }
+      items.push(shuffledDeck[deckCursor]);
+      deckCursor += 1;
+    }
+
+    return items;
+  }
+
+  function appendDeckBatch(count = APPEND_BATCH_SIZE) {
+    const items = getNextDeckItems(count);
+    for (const p of items) {
       appendPhotoToShortestColumn(p, false);
     }
   }
 
   // ========================================
-  // 自動スクロール処理
+  // 古いカード削除
   // ========================================
-  let started = false;
-  const MIN_HEIGHT_MULTIPLIER = 3;
-  const SPEED = 0.6;
-  let lastTs = null;
+  function cleanupOffscreenCards() {
+    const containerTop = container.scrollTop;
 
+    for (const col of columns) {
+      const cards = Array.from(col.children);
+
+      for (const card of cards) {
+        const cardBottom = card.offsetTop + card.offsetHeight;
+
+        if (cardBottom < containerTop - REMOVE_MARGIN) {
+          card.remove();
+        }
+      }
+
+      while (col.children.length > MAX_CARDS_PER_COLUMN) {
+        col.firstElementChild?.remove();
+      }
+    }
+  }
+
+  // ========================================
+  // 高さ不足なら追加
+  // ========================================
+  function ensureEnoughCards() {
+    let guard = 0;
+
+    while (
+      grid.offsetHeight < container.clientHeight * MIN_HEIGHT_MULTIPLIER &&
+      guard < 10
+    ) {
+      appendDeckBatch();
+      guard++;
+    }
+  }
+
+  // ========================================
+  // 自動スクロール
+  // ========================================
   function hasAnyCards() {
     return columns.some((c) => c.children.length > 0);
   }
@@ -241,12 +312,10 @@ window.addEventListener("load", () => {
     if (started) return;
     if (basePhotoData.length === 0) return;
 
-    if (!hasAnyCards()) appendDeck();
-
-    let guard = 0;
-    while (grid.offsetHeight < container.clientHeight * MIN_HEIGHT_MULTIPLIER && guard < 10) {
-      appendDeck();
-      guard++;
+    if (!hasAnyCards()) {
+      rebuildDeck();
+      appendDeckBatch(APPEND_BATCH_SIZE * 2);
+      ensureEnoughCards();
     }
 
     started = true;
@@ -262,9 +331,14 @@ window.addEventListener("load", () => {
 
       const bottomPos = container.scrollTop + container.clientHeight;
       const gridHeight = grid.offsetHeight;
-      const THRESHOLD = container.clientHeight * 3;
+      const THRESHOLD = container.clientHeight * THRESHOLD_MULTIPLIER;
 
-      if (gridHeight - bottomPos < THRESHOLD) appendDeck();
+      if (gridHeight - bottomPos < THRESHOLD) {
+        appendDeckBatch();
+      }
+
+      cleanupOffscreenCards();
+      ensureEnoughCards();
 
       requestAnimationFrame(step);
     }
@@ -273,7 +347,7 @@ window.addEventListener("load", () => {
   }
 
   // ========================================
-  // ピックアップ表示制御
+  // ピックアップ表示
   // ========================================
   function canPickup() {
     return (
@@ -291,6 +365,7 @@ window.addEventListener("load", () => {
     if (!pickupOverlay) return;
     pickupOverlay.classList.remove("is-show");
     pickupVisible = false;
+    pickupOverlay.removeAttribute("data-photo-id");
   }
 
   function openPickup(p) {
@@ -301,6 +376,7 @@ window.addEventListener("load", () => {
     const comment = String(p.comment ?? "");
     const name = String(p.name ?? "");
 
+    pickupOverlay.setAttribute("data-photo-id", String(p.id ?? ""));
     pickupImage.src = imgUrl;
     pickupImage.alt = "pickup";
     pickupName.textContent = name;
@@ -350,7 +426,6 @@ window.addEventListener("load", () => {
 
     let p = null;
 
-    // 新着優先
     while (pickupQueue.length > 0) {
       const candidate = pickupQueue.shift();
       if (candidate) {
@@ -380,17 +455,10 @@ window.addEventListener("load", () => {
 
   // ========================================
   // 新規投稿ポーリング
-  // after パラメータで差分のみ取得
   // ========================================
-  let lastId = 0;
-
-  for (const id of knownIds) {
-    const n = Number(id);
-    if (!Number.isNaN(n)) lastId = Math.max(lastId, n);
-  }
-
   async function pollOnce() {
-    if (!apiUrl) return;
+    if (!apiUrl || pollRunning) return;
+    pollRunning = true;
 
     const url = `${apiUrl}?after=${lastId}`;
 
@@ -407,35 +475,41 @@ window.addEventListener("load", () => {
       if (photos.length > 0) {
         for (const p of photos) {
           const n = Number(p.id);
-          if (!Number.isNaN(n)) lastId = Math.max(lastId, n);
+          if (!Number.isNaN(n)) {
+            lastId = Math.max(lastId, n);
+          }
 
           const idStr = String(p.id);
           if (knownIds.has(idStr)) continue;
+
           knownIds.add(idStr);
+          p.like_count = Number(p.like_count ?? 0);
 
           basePhotoData.push(p);
           pickupQueue.push(p);
 
-          // 画面にも即追加
           appendPhotoToShortestColumn(p, true);
         }
+
+        rebuildDeck();
 
         if (!started) startScrollIfNeeded();
         startPickupLoopIfNeeded();
       }
     } catch (e) {
       console.warn(e);
+    } finally {
+      pollRunning = false;
     }
   }
 
   // ========================================
-  // いいね数の定期更新
-  // 既存カードの表示中いいね数のみ更新する
+  // いいね更新
+  // 表示中カード + ピックアップのみ更新
   // ========================================
-  const LIKE_REFRESH_MS = 3000;
-
   async function refreshLikesOnce() {
-    if (!apiUrl) return;
+    if (!apiUrl || likeRefreshRunning) return;
+    likeRefreshRunning = true;
 
     try {
       const res = await fetch(apiUrl, { cache: "no-store" });
@@ -446,73 +520,87 @@ window.addEventListener("load", () => {
 
       const data = await res.json();
       const photos = Array.isArray(data) ? data : (data.photos || []);
+      const photoMap = new Map();
 
       for (const p of photos) {
-        const idStr = String(p.id);
-        const likeCount = Number(p.like_count ?? 0);
+        photoMap.set(String(p.id), Number(p.like_count ?? 0));
+      }
 
-        const selector = `article[data-photo-id="${CSS.escape(idStr)}"]`;
-        const articles = document.querySelectorAll(selector);
+      const visibleArticles = document.querySelectorAll("article[data-photo-id]");
 
-        if (!articles || articles.length === 0) continue;
+      for (const article of visibleArticles) {
+        const idStr = article.getAttribute("data-photo-id") || "";
+        if (!photoMap.has(idStr)) continue;
 
-        for (const article of articles) {
-          article.dataset.likes = String(likeCount);
+        const likeCount = photoMap.get(idStr) ?? 0;
+        article.dataset.likes = String(likeCount);
 
-          const countEl = article.querySelector(".screen-like-count");
-          if (countEl) countEl.textContent = String(likeCount);
+        const countEl = article.querySelector(".screen-like-count");
+        if (countEl) countEl.textContent = String(likeCount);
 
-          const heartEl = article.querySelector(".screen-heart");
-          if (heartEl) {
-            heartEl.textContent = likeCount > 0 ? "♥" : "♡";
-            heartEl.className = `screen-heart ${
-              likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
-            }`;
-          }
+        const heartEl = article.querySelector(".screen-heart");
+        if (heartEl) {
+          heartEl.textContent = likeCount > 0 ? "♥" : "♡";
+          heartEl.className = `screen-heart ${
+            likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
+          }`;
         }
+      }
 
-        // NOTE:
-        // ピックアップ表示側のいいね更新処理は、
-        // 現在のHTML構造と要素指定が一致しているか要確認
-        const pickup = document.querySelector(
-          `.pickup-overlay[data-photo-id="${CSS.escape(idStr)}"]`
-        );
+      const pickupId = pickupOverlay?.getAttribute("data-photo-id");
+      if (pickupId && photoMap.has(pickupId)) {
+        const likeCount = photoMap.get(pickupId) ?? 0;
+        pickupLikeCount.textContent = String(likeCount);
+        pickupHeart.textContent = likeCount > 0 ? "♥" : "♡";
+        pickupHeart.className = `screen-heart ${
+          likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
+        }`;
+      }
 
-        if (pickup) {
-          const pCount = pickup.querySelector(".pickup-like-count");
-          if (pCount) pCount.textContent = String(likeCount);
-
-          const pHeart = pickup.querySelector(".pickup-heart");
-          if (pHeart) {
-            pHeart.textContent = likeCount > 0 ? "♥" : "♡";
-            pHeart.className = `pickup-heart ${
-              likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
-            }`;
-          }
+      for (const p of basePhotoData) {
+        const idStr = String(p.id);
+        if (photoMap.has(idStr)) {
+          p.like_count = photoMap.get(idStr) ?? 0;
         }
       }
     } catch (e) {
       console.warn(e);
+    } finally {
+      likeRefreshRunning = false;
     }
   }
 
+  function startLikeRefreshLoop() {
+    refreshLikesOnce();
+
+    (function loop() {
+      setTimeout(async () => {
+        await refreshLikesOnce();
+        loop();
+      }, LIKE_REFRESH_MS);
+    })();
+  }
+
+  function startPollLoop() {
+    (function loop() {
+      setTimeout(async () => {
+        await pollOnce();
+        loop();
+      }, POLL_MS);
+    })();
+  }
+
   // ========================================
-  // 初回起動処理
+  // 初回起動
   // ========================================
-
-  // いいね数は即1回取得し、その後定期更新
-  refreshLikesOnce();
-  setInterval(refreshLikesOnce, LIKE_REFRESH_MS);
-
-  // 新規投稿ポーリングを継続実行
-  (function loop() {
-    pollOnce().finally(() => setTimeout(loop, POLL_MS));
-  })();
-
-  // 初期データがある場合は描画開始
   if (basePhotoData.length > 0) {
-    appendDeck();
+    rebuildDeck();
+    appendDeckBatch(APPEND_BATCH_SIZE * 2);
+    ensureEnoughCards();
     startScrollIfNeeded();
     startPickupLoopIfNeeded();
   }
+
+  startLikeRefreshLoop();
+  startPollLoop();
 });

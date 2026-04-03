@@ -10,7 +10,7 @@ from .models import Photo
 # 壊れかけ画像で落ちにくくする保険
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-MAX_UPLOAD_MB = 20
+MAX_UPLOAD_MB = 10
 MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 # 例: 50MP（デカすぎる画像だけ弾く）
