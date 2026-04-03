@@ -272,6 +272,20 @@ window.addEventListener("load", () => {
     pickupOverlay.removeAttribute("data-photo-id");
   }
 
+  function applyPickupOrientation(imgUrl) {
+    if (!pickupCard || !pickupImage) return;
+    pickupCard.classList.remove("pickup-card--portrait", "pickup-card--landscape");
+    const probe = new Image();
+    probe.onload = () => {
+      if (probe.naturalWidth >= probe.naturalHeight) {
+        pickupCard.classList.add("pickup-card--landscape");
+      } else {
+        pickupCard.classList.add("pickup-card--portrait");
+      }
+    };
+    probe.src = imgUrl;
+  }
+
   function openPickup(p) {
     if (!canPickup()) return;
 
@@ -283,6 +297,7 @@ window.addEventListener("load", () => {
     pickupOverlay.setAttribute("data-photo-id", String(p.id ?? ""));
     pickupImage.src = imgUrl;
     pickupImage.alt = "pickup";
+    applyPickupOrientation(imgUrl);
     pickupName.textContent = name;
 
     pickupHeart.textContent = likeCount > 0 ? "♥" : "♡";
@@ -442,9 +457,8 @@ window.addEventListener("load", () => {
         const heartEl = article.querySelector(".screen-heart");
         if (heartEl) {
           heartEl.textContent = likeCount > 0 ? "♥" : "♡";
-          heartEl.className = `screen-heart ${
-            likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
-          }`;
+          heartEl.className = `screen-heart ${likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
+            }`;
         }
       }
 
@@ -453,9 +467,8 @@ window.addEventListener("load", () => {
         const likeCount = photoMap.get(pickupId) ?? 0;
         pickupLikeCount.textContent = String(likeCount);
         pickupHeart.textContent = likeCount > 0 ? "♥" : "♡";
-        pickupHeart.className = `screen-heart ${
-          likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
-        }`;
+        pickupHeart.className = `screen-heart ${likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
+          }`;
       }
 
       for (const p of basePhotoData) {

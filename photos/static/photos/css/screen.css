@@ -288,10 +288,26 @@ body::-webkit-scrollbar {
 
 .pickup-image-wrap img {
   width: auto;
-  max-width: 96vw;
-  height: var(--pickup-h);
+  height: auto;
+  max-width: 92vw;
+  max-height: 72vh;
   object-fit: contain;
   display: block;
+}
+
+.pickup-card--portrait .pickup-image-wrap img {
+ max-height: 78vh;
+ max-width: 88vw;
+}
+.pickup-card--landscape .pickup-image-wrap img {
+ max-width: 92vw;
+ max-height: 62vh;
+}
+.pickup-card--landscape {
+ max-width: 94vw;
+}
+.pickup-card--portrait {
+ max-width: 88vw;
 }
 
 /* ========================================
