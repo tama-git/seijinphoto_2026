@@ -1,4 +1,5 @@
 window.addEventListener("load", () => {
+  console.log("screen JS loaded");
   const container = document.querySelector(".screen-main");
   const grid = document.querySelector(".screen-photo-grid");
   const initialDataBox = document.getElementById("initialData");
@@ -252,6 +253,17 @@ window.addEventListener("load", () => {
     });
   }
 
+  function updateTrackDistanceOnly(track, groupA) {
+    if (!track || !groupA) return;
+    
+    requestAnimationFrame(() => {
+      const distance = groupA.offsetHeight;
+      if (distance <= 0) return;
+
+      track.style.setProperty("--loop-distance", `${distance}px`);
+    });
+  }
+
   function getColumnParts(col) {
     const track = col.querySelector(".screen-column-track");
     if (!track) return null;
@@ -277,6 +289,14 @@ window.addEventListener("load", () => {
 
     const { track,groupA, groupB } = parts;
 
+    console.log("append start", {
+      photoId: p.id,
+      targetIndex,
+      beforeA: groupA.children.length,
+      beforeB: groupB.children.length,
+      beforeHeight: groupA.offsetHeight,
+    });
+
     // ループを保つため A/B 両方に同じカードを追加
     groupA.appendChild(createCardElement(p, true));
     groupB.appendChild(createCardElement(p, true));
@@ -289,7 +309,7 @@ window.addEventListener("load", () => {
   function flushPendingNewPhotos() {
     if (pendingNewPhotos.length === 0) return;
     if (basePhotoData.length === 0) return;
-
+    console.log("flush", pendingNewPhotos.map((p) => p.id));
     const photosToAppend = pendingNewPhotos.splice(0, pendingNewPhotos.length);
 
     photosToAppend.forEach((p) => {
