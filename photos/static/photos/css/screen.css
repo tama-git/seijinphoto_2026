@@ -3,18 +3,35 @@
 }
 
 /* ========================================
-   画面全体
+   スクリーン画面全体
 ======================================== */
 .screen-body {
   margin: 0;
+  position: relative;
   background: #f2f2f2;
   color: #222;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  position: relative;
+}
+
+/* スクロールバー非表示 */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.screen-main::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* ========================================
-   ヘッダー
+   タイトル表示
 ======================================== */
 .screen-header {
   position: absolute;
@@ -22,7 +39,7 @@
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
-  z-index: 10;
+  z-index: 20;
 
   background: transparent;
   border: none;
@@ -36,16 +53,11 @@
   padding: 8px 20px;
 
   background: #ffffff;
-  border: 2px solid #222;
+  border: none;
   border-radius: 7px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.10);
 
-  font-family:
-    -apple-system, BlinkMacSystemFont,
-    "Avenir Next", "SF Pro Display", "SF Pro Text",
-    "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    "Noto Sans JP", sans-serif;
-
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -61,17 +73,14 @@
   height: 100vh;
   padding: 12px 5px 5px;
   box-sizing: border-box;
-  overflow: hidden;
-}
-
-.screen-main::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* ========================================
-   グリッド
+   グリッドレイアウト
 ======================================== */
 .screen-photo-grid {
   display: flex;
@@ -96,16 +105,16 @@
 }
 
 /* ========================================
-   カード
+   写真カード
 ======================================== */
 .screen-photo-card {
   width: 100%;
+  padding: 0 0 4px;
   box-sizing: border-box;
   margin-bottom: 10px;
-  padding: 0 0 4px;
 
   background: #ffffff;
-  border: 1px solid #e0e0e0;
+  border: none;
   border-radius: 5px;
   break-inside: avoid;
   overflow: hidden;
@@ -115,7 +124,7 @@
   padding-bottom: 4px;
 }
 
-/* 新着カード */
+/* 追加直後の表示アニメーション */
 .screen-photo-card.is-new {
   opacity: 0;
   transform: translateY(16px) scale(0.97);
@@ -143,7 +152,7 @@
 }
 
 /* ========================================
-   写真
+   写真本体
 ======================================== */
 .screen-photo-image {
   width: 100%;
@@ -155,7 +164,7 @@
 }
 
 /* ========================================
-   メタ情報
+   メタ情報（名前・いいね）
 ======================================== */
 .screen-photo-meta {
   display: flex;
@@ -176,12 +185,11 @@
 }
 
 /* ========================================
-   コメント
+   コメント表示
 ======================================== */
 .screen-message {
   margin: 3px 0 0;
   padding: 0 8px;
-
   font-size: 12px;
   line-height: 1.4;
   word-break: break-word;
@@ -244,15 +252,12 @@
   flex-direction: column;
   width: fit-content;
   max-width: 96vw;
-
   background: #ffffff;
-  border: 1px solid #e0e0e0;
+  border: none;
   border-radius: 5px;
   padding: 0 0 4px;
-
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
   overflow: hidden;
-
   transform: translateY(10px) scale(0.98);
   transition: transform 0.25s ease;
 }
@@ -268,7 +273,8 @@
   overflow: hidden;
 }
 
-.pickup-image-wrap img {
+.pickup-image-wrap img,
+.pickup-image {
   height: var(--pickup-h);
   width: auto;
   max-width: 96vw;
@@ -281,10 +287,8 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-
   padding: 0 8px;
   margin-top: 0;
-
   color: #222;
   min-width: 0;
 }
@@ -295,7 +299,6 @@
   text-align: right;
 }
 
-/* ピックアップ内の文字サイズ */
 .pickup-card .screen-name {
   font-size: 24px;
   font-weight: 700;
