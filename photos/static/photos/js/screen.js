@@ -4,7 +4,7 @@ window.addEventListener("load", () => {
   const initialDataBox = document.getElementById("initialData");
   const noPhotoEl = document.getElementById("screenNoPhoto");
 
-  // pickup
+  // ピックアップ表示用の要素
   const pickupOverlay = document.getElementById("pickupOverlay");
   const pickupCard = document.getElementById("pickupCard");
   const pickupImage = document.getElementById("pickupImage");
@@ -18,18 +18,18 @@ window.addEventListener("load", () => {
   const apiUrl = container.dataset.apiUrl || "";
   const POLL_MS = 1000;
 
-  // ピックアップ間隔
-  const PICKUP_FIRST_DELAY_MS = 5 * 1000; // 最初の1回目まで
-  const PICKUP_EVERY_MS = 60 * 1000;       // 1分ごと
-  const PICKUP_SHOW_MS = 8 * 1000;         // 表示時間
+  // ピックアップ表示のタイミング
+  const PICKUP_FIRST_DELAY_MS = 5 * 1000; // 最初の表示まで
+  const PICKUP_EVERY_MS = 60 * 1000;      // 以降は1分ごと
+  const PICKUP_SHOW_MS = 8 * 1000;        // 表示時間
 
-  // すでに表示済みのID
+  // 既に読み込んだ投稿ID
   const knownIds = new Set();
 
-  // スクリーン用データの「種」
+  // スクリーン表示の元になる投稿データ
   let basePhotoData = [];
 
-  // 新着をピックアップ優先で見せる用
+  // 新着をピックアップで優先表示するためのキュー
   const pickupQueue = [];
   let pickupStarted = false;
   let pickupIntervalId = null;
@@ -37,12 +37,14 @@ window.addEventListener("load", () => {
   let pickupVisible = false;
   let lastPickupId = null;
 
+  // 投稿が0件のときの表示切り替え
   function hideNoPhoto() {
     if (!noPhotoEl) return;
     if (basePhotoData.length > 0) noPhotoEl.classList.add("is-hidden");
     else noPhotoEl.classList.remove("is-hidden");
   }
 
+  // 画像URLを画面表示用の形式にそろえる
   function normalizeImageUrl(p) {
     let imgUrl = p.image_url || p.image || "";
     if (imgUrl && !imgUrl.startsWith("/") && !imgUrl.startsWith("http")) {
@@ -51,6 +53,7 @@ window.addEventListener("load", () => {
     return imgUrl;
   }
 
+  // 1枚分のカード要素を生成
   function createCardElement(p) {
     const idStr = String(p.id ?? "");
     const name = String(p.name ?? "");
@@ -100,7 +103,7 @@ window.addEventListener("load", () => {
     return article;
   }
 
-  // ---- レーン準備（5列） ----
+  // カラムを5列用意する
   let columns = Array.from(grid.querySelectorAll(".screen-column"));
   if (columns.length === 0) {
     grid.innerHTML = "";
@@ -112,7 +115,7 @@ window.addEventListener("load", () => {
     columns = Array.from(grid.querySelectorAll(".screen-column"));
   }
 
-  // ---- 初期データ読み込み ----
+  // 初期データをHTMLから読み込む
   if (initialDataBox) {
     const dataEls = initialDataBox.querySelectorAll(".screen-photo-card-data");
     dataEls.forEach((el) => {
@@ -129,6 +132,7 @@ window.addEventListener("load", () => {
   }
   hideNoPhoto();
 
+  // いちばん高さの低いカラムを返す
   function pickShortestColumn() {
     let minH = Infinity;
     let target = columns[0];
@@ -142,6 +146,7 @@ window.addEventListener("load", () => {
     return target;
   }
 
+  // 指定した写真を、いちばん短いカラムに追加する
   function appendPhotoToShortestColumn(photoData, isNew = false) {
     const card = createCardElement(photoData);
     if (isNew) card.classList.add("is-new");
@@ -149,6 +154,7 @@ window.addEventListener("load", () => {
     hideNoPhoto();
   }
 
+  // 配列をシャッフルする
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -156,26 +162,28 @@ window.addEventListener("load", () => {
     }
   }
 
+  // 現在の投稿データを1セット分カラムに追加する
   function appendDeck() {
     if (basePhotoData.length === 0) return;
 
-    // ★ここ超重要：コピーはスプレッド
     const deck = [...basePhotoData];
     shuffle(deck);
 
     for (const p of deck) appendPhotoToShortestColumn(p, false);
   }
 
-  // ---- スクロール ----
+  // 自動スクロール制御
   let started = false;
   const MIN_HEIGHT_MULTIPLIER = 3;
   const SPEED = 0.6;
   let lastTs = null;
 
+  // どこかのカラムにカードが入っているか確認する
   function hasAnyCards() {
     return columns.some((c) => c.children.length > 0);
   }
 
+  // スクロールを開始する
   function startScrollIfNeeded() {
     if (started) return;
     if (basePhotoData.length === 0) return;
@@ -209,7 +217,7 @@ window.addEventListener("load", () => {
     requestAnimationFrame(step);
   }
 
-  // ---- ピックアップ ----
+  // ピックアップ表示が可能か確認する
   function canPickup() {
     return (
       pickupOverlay &&
@@ -222,12 +230,14 @@ window.addEventListener("load", () => {
     );
   }
 
+  // ピックアップ表示を閉じる
   function closePickup() {
     if (!pickupOverlay) return;
     pickupOverlay.classList.remove("is-show");
     pickupVisible = false;
   }
 
+  // 指定した投稿をピックアップ表示する
   function openPickup(p) {
     if (!canPickup()) return;
 
@@ -264,6 +274,7 @@ window.addEventListener("load", () => {
     pickupHideTimer = setTimeout(closePickup, PICKUP_SHOW_MS);
   }
 
+  // basePhotoData からランダムに1件選ぶ
   function pickRandomFromBase() {
     if (basePhotoData.length === 0) return null;
     if (basePhotoData.length === 1) return basePhotoData[0];
@@ -278,13 +289,14 @@ window.addEventListener("load", () => {
     return p;
   }
 
+  // ピックアップ表示を1回実行する
   function runPickup() {
     if (!canPickup()) return;
     if (pickupVisible) return;
 
     let p = null;
 
-    // 新着優先
+    // 新着があれば優先して表示
     while (pickupQueue.length > 0) {
       const candidate = pickupQueue.shift();
       if (candidate) {
@@ -300,6 +312,7 @@ window.addEventListener("load", () => {
     openPickup(p);
   }
 
+  // ピックアップの定期表示を開始する
   function startPickupLoopIfNeeded() {
     if (pickupStarted) return;
     if (!canPickup()) return;
@@ -311,13 +324,14 @@ window.addEventListener("load", () => {
     }, PICKUP_FIRST_DELAY_MS);
   }
 
-  // ---- ポーリング（新規だけ） ----
+  // 新規投稿ポーリング用の基準IDを作る
   let lastId = 0;
   for (const id of knownIds) {
     const n = Number(id);
     if (!Number.isNaN(n)) lastId = Math.max(lastId, n);
   }
 
+  // 新規投稿を定期取得する
   async function pollOnce() {
     if (!apiUrl) return;
 
@@ -342,9 +356,9 @@ window.addEventListener("load", () => {
           knownIds.add(idStr);
 
           basePhotoData.push(p);
-          pickupQueue.push(p); // 新着を次のピックアップ候補へ
+          pickupQueue.push(p); // 新着を次回ピックアップ候補に入れる
 
-          // 画面にも即追加
+          // スクリーンにも即追加する
           appendPhotoToShortestColumn(p, true);
         }
 
@@ -355,133 +369,77 @@ window.addEventListener("load", () => {
       console.warn(e);
     }
   }
-  // ---- いいね数だけ定期更新（既存カード更新） ----
 
+  // いいね数の更新間隔
   const LIKE_REFRESH_MS = 3000;
 
-
-
+  // いいね数だけを最新状態に更新する
   async function refreshLikesOnce() {
-
     if (!apiUrl) return;
 
-
-
     try {
-
       const res = await fetch(apiUrl, { cache: "no-store" });
-
       const ct = (res.headers.get("content-type") || "").toLowerCase();
 
       if (!res.ok) return;
-
       if (!ct.includes("application/json")) return;
 
-
-
       const data = await res.json();
-
       const photos = Array.isArray(data) ? data : (data.photos || []);
 
-
-
       for (const p of photos) {
-
         const idStr = String(p.id);
-
         const likeCount = Number(p.like_count ?? 0);
 
-
-
         const selector = `article[data-photo-id="${CSS.escape(idStr)}"]`;
-
         const articles = document.querySelectorAll(selector);
 
         if (!articles || articles.length === 0) continue;
 
-
-
         for (const article of articles) {
+          article.dataset.likes = String(likeCount);
 
-  	   article.dataset.likes = String(likeCount);
+          const countEl = article.querySelector(".screen-like-count");
+          if (countEl) countEl.textContent = String(likeCount);
 
+          const heartEl = article.querySelector(".screen-heart");
+          if (heartEl) {
+            heartEl.textContent = likeCount > 0 ? "♥" : "♡";
+            heartEl.className = `screen-heart ${likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"}`;
+          }
+        }
 
-
-	   const countEl = article.querySelector(".screen-like-count");
-	   if (countEl) countEl.textContent = String(likeCount);
-
-
-
-	  const heartEl = article.querySelector(".screen-heart");
-
- 	  if (heartEl) {
-
-    	  heartEl.textContent = likeCount > 0 ? "♥" : "♡";
-
-    	  heartEl.className = `screen-heart ${
-
-      	     likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
-
-    }`;
-
-  }
-}
-        // ピックアップ表示が出てる場合も更新（要素が存在すれば）
-
+        // ピックアップ表示中のいいね数も更新する
         const pickup = document.querySelector(
-
           `.pickup-overlay[data-photo-id="${CSS.escape(idStr)}"]`
-
         );
 
         if (pickup) {
-
           const pCount = pickup.querySelector(".pickup-like-count");
-
           if (pCount) pCount.textContent = String(likeCount);
 
-
-
           const pHeart = pickup.querySelector(".pickup-heart");
-
           if (pHeart) {
-
             pHeart.textContent = likeCount > 0 ? "♥" : "♡";
-
-            pHeart.className = `pickup-heart ${
-
-              likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"
-
-            }`;
-
+            pHeart.className = `pickup-heart ${likeCount > 0 ? "screen-heart--liked" : "screen-heart--no-like"}`;
           }
-
         }
-
       }
-
     } catch (e) {
-
       console.warn(e);
-
     }
-
   }
 
-
-
-  // すぐ1回実行 → 以降は定期更新
-
+  // すぐ1回更新し、その後も定期的に実行する
   refreshLikesOnce();
-
   setInterval(refreshLikesOnce, LIKE_REFRESH_MS);
 
-
+  // 新規投稿ポーリングを繰り返す
   (function loop() {
     pollOnce().finally(() => setTimeout(loop, POLL_MS));
   })();
 
-  // ---- 初期描画 ----
+  // 初期表示
   if (basePhotoData.length > 0) {
     appendDeck();
     startScrollIfNeeded();

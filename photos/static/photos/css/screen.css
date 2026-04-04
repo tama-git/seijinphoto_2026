@@ -1,39 +1,44 @@
-/* 画面全体 */
+:root {
+  --pickup-h: 78vh;
+}
 
+/* ========================================
+   画面全体
+======================================== */
 .screen-body {
-    margin: 0;
-    background: #f2f2f2;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    color: #222;
-    position: relative;
+  margin: 0;
+  background: #f2f2f2;
+  color: #222;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
 }
 
-/* タイトル用の透明ヘッダー（帯にはしない） */
+/* ========================================
+   ヘッダー
+======================================== */
 .screen-header {
-    position: absolute;          /* ★ 画面の上に浮かせる */
-    top: 0px;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
 
-    background: transparent;     /* ★ 帯の背景は完全になし */
-    border: none;                /* ボーダーも消す */
-    padding: 0;                  /* 高さを生まないようにする */
-    z-index: 10;                 /* 写真より前面に */
-    pointer-events: none;        /* クリック邪魔しないように（なくてもOK） */
+  background: transparent;
+  border: none;
+  padding: 0;
+  pointer-events: none;
 }
-
 
 .screen-header h1 {
   display: inline-block;
-  padding: 8px 20px;
   margin: 0;
+  padding: 8px 20px;
 
-  background: #fff;
-  border-radius: 12px; /* 5 → 12 の方が今っぽい */
-  box-shadow: 0 4px 12px rgba(0,0,0,.18);
-
-  border: 2px solid #000;
+  background: #ffffff;
+  border: 2px solid #222;
+  border-radius: 7px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
 
   font-family:
     -apple-system, BlinkMacSystemFont,
@@ -41,32 +46,33 @@
     "Segoe UI", Roboto, "Helvetica Neue", Arial,
     "Noto Sans JP", sans-serif;
 
-  font-weight: 800;
-
-  font-size: 15px;
-  letter-spacing: 0.13em;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #222;
 
   pointer-events: auto;
 }
 
-
-
+/* ========================================
+   メイン表示領域
+======================================== */
 .screen-main {
-    padding: 48px 16px 24px;    /* ★ 上だけ少し大きめにして、タイトルプレートと被らないように */
-    box-sizing: border-box;
-
-    height: 100vh;              /* ★ ヘッダー分を引かず、画面まるごと */
-    overflow-y: auto;
-    scrollbar-width: none;
+  height: 100vh;
+  padding: 12px 5px 5px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
-
 
 .screen-main::-webkit-scrollbar {
-    display: none;               /* Chrome / Edge */
+  display: none;
+  width: 0;
+  height: 0;
 }
 
-/* ピンタレスト風レイアウト（縦方向の空白を埋める） */
-
+/* ========================================
+   グリッド
+======================================== */
 .screen-photo-grid {
   display: flex;
   align-items: flex-start;
@@ -81,19 +87,6 @@
   min-width: 0;
 }
 
-.screen-photo-card {
-    background: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;     /* すこしまるめる */
-    padding: 0 0 4px;       /* 上左右8〜10くらい */
-    box-sizing: border-box;
-    break-inside: avoid;   /* 途中でカードがちぎれないようにする */
-    margin-bottom: 10px;   /* 下方向の余白（column-gap の縦版） */
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-
 .screen-initial-data {
   display: none;
 }
@@ -102,132 +95,135 @@
   display: none !important;
 }
 
+/* ========================================
+   カード
+======================================== */
+.screen-photo-card {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  padding: 0 0 4px;
 
-.screen-photo-card.is-new {
-  animation: screenNewCard 0.6s ease;
-}
-@keyframes screenNewCard {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* グリッドを埋めるだけの空カード（見た目は透明） */
-.screen-photo-card--empty {
-    border: none;
-    background: transparent;
-    box-shadow: none;
-}
-
-/* 念のため中身があっても非表示にしておく */
-.screen-photo-card--empty img,
-.screen-photo-card--empty .screen-photo-meta,
-.screen-photo-card--empty .screen-message {
-    display: none;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  break-inside: avoid;
+  overflow: hidden;
 }
 
-
-/* コメントなし用：下の余白を減らす */
 .screen-photo-card.no-message {
-    padding-bottom: 4px;      /* 好みで2〜6pxくらいに調整してOK */
+  padding-bottom: 4px;
 }
 
-/* 写真：横幅だけそろえて、縦は写真に合わせて伸び縮みさせる */
-.screen-photo-image {
-    width: 100%;        /* カードの横いっぱい */
-    height: auto;       /* 縦は画像比率に任せる */
-    display: block;
-    border-radius: 5px 5px 0 0; 
-    object-fit: cover;
-}
-
-
-
-/* 名前＋ハートの行（横並び） */
-.screen-photo-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;   /* 行の中を縦方向センター */
-
-    margin-top: 0px;
-    padding: 0 8px;
-    font-size: 14px;       /* 名前・数字・ハートのベースサイズを揃える */
-    line-height: 1;        /* 上下の余白をなくす */
-}
-
-.screen-name {
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    line-height: 1; 
-}
-
-/* コメントは下に一行で出す */
-.screen-message {
-    margin: 3px 0 0;
-    font-size: 12px;
-    line-height: 1.4;
-    word-break: break-word;
-    padding: 0 8px;    
-}
-
-/* いいね表示（スクリーン用） */
-.screen-like-display {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 14px;
-    line-height: 1;  
-}
-
-.screen-like-display .screen-heart {
-    font-size: 1.1rem;
-    line-height: 1;
-    position: relative;
-    top: -4px;   /* ← ここでハートを1pxだけ上に持ち上げる */
-}
-
-
-/* いいねあり：赤いハート ♥ */
-.screen-heart--liked {
-    color: #ff0400;
-}
-
-/* いいね0：黒いハート ♡ */
-.screen-heart--no-like {
-    color: #000000;
-}
-
-.screen-like-count {
-    line-height: 1;
-    font-size: 1.1rem;
-    line-height: 1;
-    position: relative;
-    top: -4px;   
-
-}
-
-/* ===== 新しく追加されたカードが「スーッ」と出る用 ===== */
-
+/* 新着カード */
 .screen-photo-card.is-new {
-    opacity: 0;
-    transform: translateY(16px) scale(0.97);
-    animation: screenCardIn 0.4s ease-out forwards;
+  opacity: 0;
+  transform: translateY(16px) scale(0.97);
+  animation: screenCardIn 0.4s ease-out forwards;
 }
 
 @keyframes screenCardIn {
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-/* ===== ピックアップ（流れてるカードっぽく + 幅は写真に追従） ===== */
-
-:root{
-  --pickup-h: 78vh; /* ← 縦幅固定。好みで 55〜70vh で調整 */
+/* 空カード */
+.screen-photo-card--empty {
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
-.pickup-overlay{
+.screen-photo-card--empty img,
+.screen-photo-card--empty .screen-photo-meta,
+.screen-photo-card--empty .screen-message {
+  display: none;
+}
+
+/* ========================================
+   写真
+======================================== */
+.screen-photo-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  border-radius: 5px 5px 0 0;
+  background: #f6f6f6;
+}
+
+/* ========================================
+   メタ情報
+======================================== */
+.screen-photo-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-top: 0;
+  padding: 0 8px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.screen-name {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* ========================================
+   コメント
+======================================== */
+.screen-message {
+  margin: 3px 0 0;
+  padding: 0 8px;
+
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* ========================================
+   いいね表示
+======================================== */
+.screen-like-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.screen-like-display .screen-heart {
+  position: relative;
+  top: -4px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.screen-heart--liked {
+  color: #ff0400;
+}
+
+.screen-heart--no-like {
+  color: #000000;
+}
+
+.screen-like-count {
+  position: relative;
+  top: -4px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* ========================================
+   ピックアップ表示
+======================================== */
+.pickup-overlay {
   position: fixed;
   inset: 0;
   display: grid;
@@ -236,47 +232,43 @@
   pointer-events: none;
   z-index: 9999;
   transition: opacity 0.25s ease;
-
 }
 
-.pickup-overlay.is-show{
+.pickup-overlay.is-show {
   opacity: 1;
   pointer-events: auto;
 }
 
-/* ★ここが肝：カード幅を写真に合わせて可変にする */
-.pickup-card{
+.pickup-card {
   display: inline-flex;
   flex-direction: column;
+  width: fit-content;
+  max-width: 96vw;
 
-  width: fit-content;     /* 写真幅にフィット */
-  max-width: 96vw;        /* 画面からはみ出さない保険 */
-
-  background: #ffffff;    /* 流れてるカードと同じ白 */
+  background: #ffffff;
   border: 1px solid #e0e0e0;
   border-radius: 5px;
   padding: 0 0 4px;
 
-  box-shadow: 0 20px 60px rgba(0,0,0,0.22);
-  overflow: hidden;       /* 角丸を画像にも効かせる */
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
 
   transform: translateY(10px) scale(0.98);
   transition: transform 0.25s ease;
 }
 
-.pickup-overlay.is-show .pickup-card{
+.pickup-overlay.is-show .pickup-card {
   transform: translateY(0) scale(1);
 }
 
-.pickup-image-wrap{
+.pickup-image-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
 
-/* 縦は固定、横長はそれに応じて横が伸びる */
-.pickup-image-wrap img{
+.pickup-image-wrap img {
   height: var(--pickup-h);
   width: auto;
   max-width: 96vw;
@@ -284,8 +276,7 @@
   display: block;
 }
 
-/* 文字エリア：写真幅に合わせて収まるように */
-.pickup-meta{
+.pickup-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -298,37 +289,36 @@
   min-width: 0;
 }
 
-.pickup-comment{
+.pickup-comment {
   min-width: 0;
   overflow-wrap: anywhere;
   text-align: right;
 }
 
-
-/* ===== ピックアップ内だけ：投稿者名・いいね数の文字サイズ調整 ===== */
-
-.pickup-card .screen-name{
-  font-size: 24px;   /* ← 投稿者名 */
+/* ピックアップ内の文字サイズ */
+.pickup-card .screen-name {
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.1;
 }
-.pickup-card .screen-message{
-  font-size: 21px;   /* ← コメント */
-  line-height: 1.25;
+
+.pickup-card .screen-message {
   padding: 8px 12px 10px;
+  font-size: 21px;
+  line-height: 1.25;
 }
-.pickup-card .screen-like-count{
-  font-size: 24px;   /* ← いいね数 */
+
+.pickup-card .screen-like-count {
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.1;
 }
 
-.pickup-card .screen-heart{
-  font-size: 27px;   /* ← ハートも揃えて大きくしたいなら */
+.pickup-card .screen-heart {
+  font-size: 27px;
   line-height: 1;
 }
 
-/* ついでに、上の白い帯(メタ)の高さを整えたい時 */
-.pickup-card .screen-photo-meta{
+.pickup-card .screen-photo-meta {
   padding: 10px 12px;
 }
