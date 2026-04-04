@@ -50,7 +50,7 @@ body::-webkit-scrollbar,
 .screen-header h1 {
   display: inline-block;
   margin: 0;
-  padding: 10px 20px 12px;
+  padding: 10px 15px 10px;
 
   background: #ffffff;
   border: none;
@@ -71,7 +71,7 @@ body::-webkit-scrollbar,
 ======================================== */
 .screen-main {
   height: 100vh;
-  padding: 10px 20px 20px;
+  padding: 5px 5px 5px 5px;
   box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;
