@@ -425,13 +425,7 @@ window.addEventListener("load", () => {
     }`;
 
   }
-
 }
-
-
-
-
-
         // ピックアップ表示が出てる場合も更新（要素が存在すれば）
 
         const pickup = document.querySelector(
