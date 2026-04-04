@@ -223,7 +223,7 @@ window.addEventListener("load", () => {
 
     for (let i = 0; i < COLUMN_COUNT; i++) {
       const feedA = buildBalancedSequence(allPhotos, MIN_ITEMS_PER_COLUMN, 2);
-      const feedB = buildBalancedSequence(allPhotos, MIN_ITEMS_PER_COLUMN, 3);
+      const feedB = [...feedA]; 
 
       columnFeeds.push({
         feedA,
@@ -241,6 +241,8 @@ window.addEventListener("load", () => {
       const distance = groupA.offsetHeight;
       if (distance <= 0) return;
 
+      track.style.setProperty("--loop-distance", `${distance}px`);
+      
       const pxPerSec = BASE_PX_PER_SEC + index * 1.5;
       const duration = Math.max(distance / pxPerSec, 18);
 
@@ -273,13 +275,13 @@ window.addEventListener("load", () => {
 
     if (!parts) return;
 
-    const { track, groupA, groupB } = parts;
+    const { track,groupA, groupB } = parts;
 
     // ループを保つため A/B 両方に同じカードを追加
     groupA.appendChild(createCardElement(p, true));
     groupB.appendChild(createCardElement(p, true));
 
-    updateTrackAnimation(track, groupA, targetIndex);
+    updateTrackDistanceOnly(track, groupA);
 
     nextAppendColumnIndex = (nextAppendColumnIndex + 1) % columns.length;
   }
