@@ -279,8 +279,9 @@ seijinphoto_2026/
 │  ├─ templates/photos/
 │  └─ static/photos/
 └─ media/photos/
+’‘’
 
-## 実行方法
+## 仮想環境実行方法
 
 ## 1. 仮想環境の作成
 
