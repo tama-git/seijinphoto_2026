@@ -429,7 +429,7 @@ window.addEventListener("load", () => {
       console.warn(e);
     }
   }
-
+  
   // すぐ1回更新し、その後も定期的に実行する
   refreshLikesOnce();
   setInterval(refreshLikesOnce, LIKE_REFRESH_MS);

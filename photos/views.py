@@ -265,6 +265,9 @@ def toggle_like_view(request, photo_id):
 
 @require_GET
 def screen_photos_api(request):
+    if not admin_login_required(request):
+        return JsonResponse({"error": "admin_login_required"}, status=403)
+
     after = request.GET.get("after")
     qs = Photo.objects.annotate(like_count=Count("likes")).order_by("id")
 
